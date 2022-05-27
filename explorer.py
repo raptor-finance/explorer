@@ -240,11 +240,9 @@ class RaptorChainExplorer(object):
     def getNavBar(self):
         return f"""
             <nav class="menu">
-                <ol>
-                    <li><a href="#">Transactions</a></li>
-                    <li><a href="#">Blocks</a></li>
-                    <li>Accounts</li>
-                </ol>
+				<div>
+					<input></input>
+				</div>
             </nav>
         """
 
@@ -273,8 +271,8 @@ class RaptorChainExplorer(object):
     def pageTemplate(self, subtemplate):
         return f"""
             <html>
-                {self.getNavBar()}
                 <body>
+					{self.getNavBar()}
                     <div>
                         <div style="border: solid; width: 55%; float: left">
                             {subtemplate}
