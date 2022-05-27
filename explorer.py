@@ -61,6 +61,7 @@ class RaptorChainPuller(object):
             self.data = b""
             self.messages = []
             self.affectedAccounts = []
+            self.typeName = ""
             if (self.txtype == 0): # legacy transfer
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
@@ -73,6 +74,7 @@ class RaptorChainPuller(object):
                     self.data = bytes.fromhex(txData.get("callData", "").replace("0x", ""))
                 except:
                     self.data = b""
+                self.typeName = "legacy"
             if (self.txtype == 1): # block mining/staking tx
                 self.fee = 0
                 self.sender = w3.toChecksumAddress(txData.get("from"))
@@ -81,6 +83,7 @@ class RaptorChainPuller(object):
                 self.value = 0
                 self.affectedAccounts = [self.sender]
                 self.gasprice = 0
+                self.typeName = "block production"
             elif self.txtype == 2: # metamask transaction
                 decoder = self.ETHTransactionDecoder()
                 ethDecoded = decoder.decode_raw_tx(txData.get("rawTx"))
@@ -100,6 +103,7 @@ class RaptorChainPuller(object):
                 if not self.recipient:
                     self.recipient = w3.toChecksumAddress(w3.keccak(rlp.encode([bytes.fromhex(self.sender.replace("0x", "")), int(self.nonce)]))[12:])
                     self.contractDeployment = True
+                self.typeName = "web3/metamask transaction"
             elif self.txtype == 3: # deposits checking trigger
                 self.fee = 0
                 self.l2hash = txData["l2hash"]
@@ -113,17 +117,20 @@ class RaptorChainPuller(object):
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
                 self.affectedAccounts = [self.sender, self.recipient]
+                self.typeName = "masternode registration"
             elif self.txtype == 5: # MN destroy
                 self.fee = 0
                 self.value = 0
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
                 self.affectedAccounts = [self.sender, self.recipient]
+                self.typeName = "masternode deletion"
             elif self.txtype == 6:
                 self.fee = 0
                 self.sender = "0x0000000000000000000000000000000000000000"
                 self.recipient = "0x0000000000000000000000000000000000000000"
                 self.value = 0
+                self.typeName = "system transaction"
             
             self.epoch = txData.get("epoch")
             self.bio = txData.get("bio")
@@ -198,12 +205,22 @@ class RaptorChainExplorer(object):
                     <div>Recipient : <a href="/address/{txObject.recipient}">{txObject.recipient}</a></div>
                     <div>Value : {txObject.value / (10**18)} {self.ticker}</div>
                     <div>Calldata : 0x{(txObject.data.hex()) if (len(txObject.data) < 64) else (txObject.data.hex()[:64] + "...")}</div>
+                    <div>Type : {txObject.txtype} ({txObject.typeName})</div>
                 </div>
+            </div>
+        """
+
+    def showTransaction(self, tx):
+        return f"""
+            <div>
+                
             </div>
         """
 		
     def txsMapped(self, txids):
         return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
+
+
 
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
@@ -236,7 +253,7 @@ class RaptorChainExplorer(object):
             <div>
                 <font size=6>Last 10 transactions</font>
                 <div>
-                    {self.txsMapped([_tx.txid for _tx in self.puller.getLastNTxs(10)])}
+                    {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
                 </div>
             </div>
         """
