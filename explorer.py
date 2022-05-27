@@ -174,6 +174,11 @@ class RaptorChainPuller(object):
         _raw = requests.get(f"{self.node}/accounts/accountInfo/{address}").json().get("result")
         return self.Account(_raw)
         
+    def getLastNTxs(self, n):
+        _raw = requests.get(f"{self.node}/get/nLastTxs/{n}").json().get("result")
+        return [self.Transaction(_rawtx) for _rawtx in _raw]
+        
+        
     def loadStats(self):
         _raw = requests.get(f"{self.node}/stats").json().get("result")
         return self.Stats(_raw)
@@ -198,7 +203,7 @@ class RaptorChainExplorer(object):
         """
 		
     def txsMapped(self, txids):
-        return ("<ul>Transaction history" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
+        return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
 
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
@@ -209,6 +214,7 @@ class RaptorChainExplorer(object):
                     Balance : {acctObject.balance / (10**18)} {self.ticker}
                 </div>
                 <div>
+                    <div>Transaction history</div>
                     {self.txsMapped(list(reversed(acctObject.transactions[1:])))}
                 </div>
             </div>
@@ -223,6 +229,16 @@ class RaptorChainExplorer(object):
                     <li>Accounts</li>
                 </ol>
             </nav>
+        """
+
+    def homepageCard(self):
+        return f"""
+            <div>
+                <font size=6>Last 10 transactions</font>
+                <div>
+                    {self.txsMapped([_tx.txid for _tx in self.puller.getLastNTxs(10)])}
+                </div>
+            </div>
         """
 
     def networkStatsCard(self):
@@ -266,5 +282,9 @@ def tx(txid):
 @app.route("/address/<addr>")
 def address(addr):
     return explorer.pageTemplate(explorer.AccountCard(addr))
+
+@app.route("/")
+def homepage():
+    return explorer.pageTemplate(explorer.homepageCard())
 
 app.run(host="0.0.0.0")
