@@ -267,4 +267,4 @@ def tx(txid):
 def address(addr):
     return explorer.pageTemplate(explorer.AccountCard(addr))
 
-app.run()
+app.run(host="0.0.0.0")
