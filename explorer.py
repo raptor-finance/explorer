@@ -280,7 +280,8 @@ class RaptorChainExplorer(object):
             function handleSearch() {
                 _search = document.getElementById("searchInput").value;
                 _url = getSearchUrl(_search);
-                open(_url);
+				window.location.replace(_url);
+//                open(_url);
             }
         """
 		
