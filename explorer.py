@@ -241,7 +241,7 @@ class RaptorChainExplorer(object):
         return f"""
             <nav class="menu">
 				<div>
-					<input></input>
+					<input id="searchInput"></input><button onclick="handleSearch()">Search</button>
 				</div>
             </nav>
         """
@@ -267,10 +267,30 @@ class RaptorChainExplorer(object):
             </div>
         
         """
-        
-    def pageTemplate(self, subtemplate):
+
+    def searchScript(self):
+        return """
+            function getSearchUrl(_search) {
+                if (_search.length == 42) {
+                    return `/address/${_search}`;
+                }
+                return `/tx/${_search}`;
+            }
+            
+            function handleSearch() {
+                _search = document.getElementById("searchInput").value;
+                _url = getSearchUrl(_search);
+                open(_url);
+            }
+        """
+		
+    def pageTemplate(self, subtemplate, pageTitle="RaptorChain Explorer"):
         return f"""
             <html>
+				<head>
+					<title>{pageTitle}</title>
+                    <script src="/searchScripts.js"></script>
+				</head>
                 <body>
 					{self.getNavBar()}
                     <div>
@@ -290,13 +310,17 @@ app.config["DEBUG"] = False
 CORS(app)
 explorer = RaptorChainExplorer()
 
+@app.route("/searchScripts.js")
+def getSearchScripts():
+    return explorer.searchScript()
+
 @app.route("/tx/<txid>")
 def tx(txid):
-    return explorer.pageTemplate(explorer.TransactionCard(txid))
+    return explorer.pageTemplate(explorer.TransactionCard(txid), f"RaptorChain transaction {txid}")
     
 @app.route("/address/<addr>")
 def address(addr):
-    return explorer.pageTemplate(explorer.AccountCard(addr))
+    return explorer.pageTemplate(explorer.AccountCard(addr), f"RaptorChain address {addr}")
 
 @app.route("/")
 def homepage():
