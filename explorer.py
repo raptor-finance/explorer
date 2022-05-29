@@ -294,11 +294,14 @@ class RaptorChainExplorer(object):
 				</head>
                 <body>
 					{self.getNavBar()}
+                    <div style="height: 2%"></div>
                     <div>
-                        <div style="border: solid; width: 55%; float: left">
+                        <div style="width: 1%; height: 1; float: left"></div>
+                        <div style="border: solid; width: 54%; float: left; padding-left: 1%">
                             {subtemplate}
                         </div>
-                        <div style="border: solid; width: 40%; float: left">
+                        <div style="width: 2%; height: 1; float: left"></div>
+                        <div style="border: solid; width: 39%; float: left; padding-left: 1%">
                             {self.networkStatsCard()}
                         </div>
                     </div>
