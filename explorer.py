@@ -170,8 +170,25 @@ class RaptorChainPuller(object):
             self.holders = coinInfo.get("holders", 0)
             self.supply = coinInfo.get("supply", 0)
     
+    class Block(object):
+        def __init__(self, infoDict):
+            miningData = infoDict.get("miningData", {})
+            self.miner = miningData.get("miner", "0x0000000000000000000000000000000000000000")
+            self.proof = miningData.get("proof", "0x0000000000000000000000000000000000000000000000000000000000000000")
+            self.messages = infoDict.get("decodedMessages", [])
+            self.height = infoDict.get("height", 0)
+            self.timestamp = infoDict.get("timestamp", 0)
+            self.txsRoot = infoDict.get("txsRoot", "0x0000000000000000000000000000000000000000000000000000000000000000")
+    
     def __init__(self, node):
         self.node = node
+    
+    def loadBlock(self, blockid):
+        _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
+        print(_url)
+        _raw = requests.get(_url).json().get("result", {})
+        return self.Block(_raw)
+        
     
     def loadTransaction(self, txid):
         _raw = requests.get(f"{self.node}/get/transactions/{txid}").json().get("result")[0]
@@ -198,14 +215,27 @@ class RaptorChainExplorer(object):
     def TransactionCard(self, txid):
         txObject = self.puller.loadTransaction(txid)
         return f"""
-            <div>
-                <h3>Transaction {txid}</h3>
+            <h3>Transaction {txid}</h3>
+            <div style="border: solid; padding-left: 1%">
                 <div>
                     <div>Sender : <a href="/address/{txObject.sender}">{txObject.sender}</a></div>
                     <div>Recipient : <a href="/address/{txObject.recipient}">{txObject.recipient}</a></div>
                     <div>Value : {txObject.value / (10**18)} {self.ticker}</div>
                     <div>Calldata : 0x{(txObject.data.hex()) if (len(txObject.data) < 64) else (txObject.data.hex()[:64] + "...")}</div>
+                    <div>Epoch : <a href="/block/{txObject.epoch}">{txObject.epoch}</a></div>
                     <div>Type : {txObject.txtype} ({txObject.typeName})</div>
+                </div>
+            </div>
+        """
+
+    def BlockCard(self, bkid):
+        block = self.puller.loadBlock(bkid)
+        return f"""
+            <h3>Beacon block {block.height}</h3>
+            <div style="border: solid; padding-left: 1%">
+                <div>
+                    <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
+					<div>Hash : {block.proof}</div>
                 </div>
             </div>
         """
@@ -220,21 +250,17 @@ class RaptorChainExplorer(object):
     def txsMapped(self, txids):
         return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
 
-
-
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
         return f"""
-            <div>
-                <h3>Account {address}</h3>
-                <div>
-                    Balance : {acctObject.balance / (10**18)} {self.ticker}
-                </div>
-                <div>
-                    <div>Transaction history</div>
-                    {self.txsMapped(list(reversed(acctObject.transactions[1:])))}
-                </div>
-            </div>
+            <h3>Account {address}</h3>
+			<div>
+				Balance : {acctObject.balance / (10**18)} {self.ticker}
+			</div>
+			<div style="border: solid; padding-left: 1%">
+				<h4>Transaction history</h4>
+				{self.txsMapped(list(reversed(acctObject.transactions[1:])))}
+			</div>
         """
         
     def getNavBar(self):
@@ -248,7 +274,8 @@ class RaptorChainExplorer(object):
 
     def homepageCard(self):
         return f"""
-            <div>
+			<font size=10>RaptorChain Explorer</font>
+            <div style="border: solid; padding-left: 1%;">
                 <font size=6>Last 10 transactions</font>
                 <div>
                     {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
@@ -291,18 +318,25 @@ class RaptorChainExplorer(object):
 				<head>
 					<title>{pageTitle}</title>
                     <script src="/searchScripts.js"></script>
+					<link rel="icon" href="https://raptorchain.io/images/logo.png"></link>
 				</head>
                 <body>
-					{self.getNavBar()}
+					<div style="float: none">
+						{self.getNavBar()}
+					</div>
                     <div style="height: 2%"></div>
                     <div>
                         <div style="width: 1%; height: 1; float: left"></div>
-                        <div style="border: solid; width: 54%; float: left; padding-left: 1%">
-                            {subtemplate}
+                        <div style="width: 55%; float: left;">
+							<div style="float: none">
+								{subtemplate}
+							</div>
                         </div>
                         <div style="width: 2%; height: 1; float: left"></div>
                         <div style="border: solid; width: 39%; float: left; padding-left: 1%">
-                            {self.networkStatsCard()}
+							<div style="float: none">
+								{self.networkStatsCard()}
+							</div>
                         </div>
                     </div>
                 </body>
@@ -318,6 +352,10 @@ explorer = RaptorChainExplorer()
 def getSearchScripts():
     return explorer.searchScript()
 
+@app.route("/block/<bkid>")
+def block(bkid):
+    return explorer.pageTemplate(explorer.BlockCard(bkid), f"RaptorChain block {bkid}")
+
 @app.route("/tx/<txid>")
 def tx(txid):
     return explorer.pageTemplate(explorer.TransactionCard(txid), f"RaptorChain transaction {txid}")
@@ -330,4 +368,8 @@ def address(addr):
 def homepage():
     return explorer.pageTemplate(explorer.homepageCard())
 
-app.run(host="0.0.0.0")
+def getApp():
+    return app
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0")
