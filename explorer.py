@@ -265,9 +265,10 @@ class RaptorChainExplorer(object):
         
     def getNavBar(self):
         return f"""
-            <nav class="menu">
+            <nav>
 				<div>
-					<input id="searchInput"></input><button onclick="handleSearch()">Search</button>
+					<img src="https://raptorchain.io/images/logo.png" width=40 height=40></img>
+					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
 				</div>
             </nav>
         """
