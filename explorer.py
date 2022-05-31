@@ -326,7 +326,7 @@ class RaptorChainExplorer(object):
 						{self.getNavBar()}
 					</div>
                     <div style="height: 2%"></div>
-                    <div>
+                    <!-- <div> -->
                         <div style="width: 1%; height: 1; float: left"></div>
                         <div style="width: 55%; float: left;">
 							<div style="float: none">
@@ -339,7 +339,7 @@ class RaptorChainExplorer(object):
 								{self.networkStatsCard()}
 							</div>
                         </div>
-                    </div>
+                    <!-- </div> -->
                 </body>
             </html>
         """
