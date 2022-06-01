@@ -267,7 +267,7 @@ class RaptorChainExplorer(object):
         return f"""
             <nav>
 				<div>
-					<img src="https://raptorchain.io/images/logo.png" width=40 height=40></img>
+					<a href="/"><img src="https://raptorchain.io/images/logo.png" width=40 height=40></img></a>
 					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
 				</div>
             </nav>
@@ -319,28 +319,29 @@ class RaptorChainExplorer(object):
 				<head>
 					<title>{pageTitle}</title>
                     <script src="/searchScripts.js"></script>
-					<link rel="icon" href="https://raptorchain.io/images/logo.png"></link>
+					<link rel="icon" href="https://raptorchain.io/images/logo32px.png"></link>
 				</head>
                 <body>
 					<div style="float: none">
 						{self.getNavBar()}
 					</div>
                     <div style="height: 2%"></div>
-                    <!-- <div> -->
-                        <div style="width: 1%; height: 1; float: left"></div>
-                        <div style="width: 55%; float: left;">
+                    <div style="float: none">
+                        <div style="width: 1%; height: 1; display: inline-block;"></div>
+                        <div style="width: 55%; display: inline-block;">
 							<div style="float: none">
 								{subtemplate}
 							</div>
                         </div>
-                        <div style="width: 2%; height: 1; float: left"></div>
-                        <div style="border: solid; width: 39%; float: left; padding-left: 1%">
-							<div style="float: none">
-								{self.networkStatsCard()}
-							</div>
+                        <div style="width: 2%; height: 1; display: inline-block;"></div>
+                        <div style="border: solid; width: 39%; display: inline-block; padding-left: 1%">
+							{self.networkStatsCard()}
                         </div>
-                    <!-- </div> -->
+                    </div>
                 </body>
+				<footer>
+					<i>Made with love by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">Raptor Finance</a></i>
+				</footer>
             </html>
         """
         
