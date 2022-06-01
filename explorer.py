@@ -269,6 +269,7 @@ class RaptorChainExplorer(object):
 				<div>
 					<a href="/"><img src="https://raptorchain.io/images/logo.png" width=40 height=40></img></a>
 					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
+					<div style="display: inline-block; width: 30%; padding-right: 1%; float: right;"><div style="border: solid; padding-left: 1%">{self.networkStatsCard()}</div></div>
 				</div>
             </nav>
         """
@@ -326,21 +327,21 @@ class RaptorChainExplorer(object):
 						{self.getNavBar()}
 					</div>
                     <div style="height: 2%"></div>
-                    <div style="float: none">
+					<!-- <div style="border: solid; width: 39%; display: inline-block; padding-left: 1%"> -->
+						<!-- {self.networkStatsCard()} -->
+					<!-- </div> -->
+                    <div>
                         <div style="width: 1%; height: 1; display: inline-block;"></div>
+                        <div style="width: 2%; height: 1; display: inline-block;"></div>
                         <div style="width: 55%; display: inline-block;">
-							<div style="float: none">
+							<div>
 								{subtemplate}
 							</div>
-                        </div>
-                        <div style="width: 2%; height: 1; display: inline-block;"></div>
-                        <div style="border: solid; width: 39%; display: inline-block; padding-left: 1%">
-							{self.networkStatsCard()}
                         </div>
                     </div>
                 </body>
 				<footer>
-					<i>Made with love by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">Raptor Finance</a></i>
+					<i>Made with &#x2764;&#xFE0F; by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">Raptor Finance</a></i>
 				</footer>
             </html>
         """
