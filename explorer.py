@@ -175,11 +175,12 @@ class RaptorChainPuller(object):
             miningData = infoDict.get("miningData", {})
             self.miner = miningData.get("miner", "0x0000000000000000000000000000000000000000")
             self.proof = miningData.get("proof", "0x0000000000000000000000000000000000000000000000000000000000000000")
+            self.parent = infoDict.get("parent", "0x0000000000000000000000000000000000000000000000000000000000000000")
             self.messages = infoDict.get("decodedMessages", [])
             self.height = infoDict.get("height", 0)
             self.timestamp = infoDict.get("timestamp", 0)
             self.txsRoot = infoDict.get("txsRoot", "0x0000000000000000000000000000000000000000000000000000000000000000")
-            self.transactions = infoDuct.get("transactions", {})
+            self.transactions = list(filter(bool, infoDict.get("transactions", {})))
     
     def __init__(self, node):
         self.node = node
@@ -237,6 +238,8 @@ class RaptorChainExplorer(object):
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
+                    <h4>Transactions</h4>
+                        {self.txsMapped(list(reversed(block.transactions)))}
                 </div>
             </div>
         """
