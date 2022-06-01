@@ -179,6 +179,7 @@ class RaptorChainPuller(object):
             self.height = infoDict.get("height", 0)
             self.timestamp = infoDict.get("timestamp", 0)
             self.txsRoot = infoDict.get("txsRoot", "0x0000000000000000000000000000000000000000000000000000000000000000")
+            self.transactions = infoDuct.get("transactions", {})
     
     def __init__(self, node):
         self.node = node
