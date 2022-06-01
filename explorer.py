@@ -214,6 +214,13 @@ class RaptorChainExplorer(object):
         self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
         self.ticker = "tRPTR"
 
+    def formatSupply(self, rawSupply):
+        if rawSupply >= 1000000:
+            return f"{round(rawSupply / 1000000, 3)}M"
+        if rawSupply >= 1000:
+            return f"{round(rawSupply / 1000, 3)}k"
+        return f"{round(totalSupply, 3)}"
+    
     def TransactionCard(self, txid):
         txObject = self.puller.loadTransaction(txid)
         return f"""
@@ -273,7 +280,7 @@ class RaptorChainExplorer(object):
 				<div>
 					<a href="/"><img src="https://raptorchain.io/images/logo.png" width=40 height=40></img></a>
 					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
-					<div style="display: inline-block; width: 30%; padding-right: 1%; float: right;"><div style="border: solid; padding-left: 1%">{self.networkStatsCard()}</div></div>
+					<span style="width: 30%; padding-right: 1%; float: right;"><div style="border: solid; padding-left: 1%">{self.networkStatsCard()}</div></span>
 				</div>
             </nav>
         """
@@ -294,14 +301,14 @@ class RaptorChainExplorer(object):
         return f"""
             <div>
                 <div><font size=6>Stats</font></div>
-                <div>Coin supply : {stats.supply / (10**18)} {self.ticker}</div>
+                <div>Coin supply : {self.formatSupply(stats.supply / (10**18))} {self.ticker}</div>
                 <div>Number of holders : {stats.holders}</div>
                 <div>Chain length : {stats.chainLength}</div>
             </div>
         
         """
 
-    def searchScript(self):
+    def pageScripts(self):
         return """
             function getSearchUrl(_search) {
                 if (_search.length == 42) {
@@ -316,6 +323,11 @@ class RaptorChainExplorer(object):
 				window.location.replace(_url);
 //                open(_url);
             }
+            
+            async function systemRoot() {
+				return (await (await fetch("https://rpc-testnet.raptorchain.io/chain/getlastblock")).json()).result.txsRoot
+			}
+			
         """
 		
     def pageTemplate(self, subtemplate, pageTitle="RaptorChain Explorer"):
@@ -335,8 +347,8 @@ class RaptorChainExplorer(object):
 						<!-- {self.networkStatsCard()} -->
 					<!-- </div> -->
                     <div>
-                        <div style="width: 1%; height: 1; display: inline-block;"></div>
-                        <div style="width: 2%; height: 1; display: inline-block;"></div>
+                        <div style="width: 1%; height: 1;"></div>
+                        <div style="width: 2%; height: 1;"></div>
                         <div style="width: 55%; display: inline-block;">
 							<div>
 								{subtemplate}
@@ -345,7 +357,7 @@ class RaptorChainExplorer(object):
                     </div>
                 </body>
 				<footer>
-					<i>Made with &#x2764;&#xFE0F; by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">Raptor Finance</a></i>
+					<i>Made with &#x2764;&#xFE0F; and &#9749; by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">RaptorChain</a></i>
 				</footer>
             </html>
         """
@@ -355,9 +367,9 @@ app.config["DEBUG"] = False
 CORS(app)
 explorer = RaptorChainExplorer()
 
-@app.route("/searchScripts.js")
+@app.route("/pageScripts.js")
 def getSearchScripts():
-    return explorer.searchScript()
+    return explorer.pageScripts()
 
 @app.route("/block/<bkid>")
 def block(bkid):
