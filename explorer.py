@@ -233,7 +233,7 @@ class RaptorChainExplorer(object):
     def BlockCard(self, bkid):
         block = self.puller.loadBlock(bkid)
         return f"""
-            <h3>Beacon block {block.height}</h3>
+            <h3>{f"Beacon block {block.height}" if block.height else "Genesis Block"}</h3>
             <div style="border: solid; padding-left: 1%">
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
