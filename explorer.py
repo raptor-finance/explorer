@@ -302,7 +302,7 @@ class RaptorChainExplorer(object):
             <div>
                 <div><font size=6>Stats</font></div>
                 <div>Coin supply : {self.formatSupply(stats.supply / (10**18))} {self.ticker}</div>
-                <div>Number of holders : {stats.holders}</div>
+                <div>Holders : {stats.holders}</div>
                 <div>Chain length : {stats.chainLength}</div>
             </div>
         
@@ -349,7 +349,7 @@ class RaptorChainExplorer(object):
                     <div>
                         <div style="width: 1%; height: 1;"></div>
                         <div style="width: 2%; height: 1;"></div>
-                        <div style="width: 55%; display: inline-block;">
+                        <div style="width: 95%; display: inline-block;">
 							<div>
 								{subtemplate}
 							</div>
