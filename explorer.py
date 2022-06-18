@@ -1,4 +1,4 @@
-import requests, rlp, flask, json
+import requests, rlp, flask, json, time
 from rlp.sedes import Binary, big_endian_int, binary
 from flask_cors import CORS
 from dataclasses import asdict, dataclass
@@ -233,6 +233,19 @@ class RaptorChainExplorer(object):
             return f"{round(_withoutDecimals / 1000, 3)}k"
         return f"{round(_withoutDecimals, 3)}"
     
+    def formatTime(self, rawDelay):
+        if rawDelay < 60:
+            return f"{int(rawDelay)}s"
+        elif rawDelay < 3600:
+            return f"{int(rawDelay/60)}m"
+        elif rawDelay < 86400:
+            return f"{int(rawDelay/3600)}h"
+        elif rawDelay < 604800:
+            return f"{int(rawDelay/86400)}d {int((rawDelay%86400)/3600)}h"
+        elif rawDelay < 604800:
+            return f"{int(rawDelay/86400)}d {int((rawDelay%86400)/3600)}h"
+        return f"{int(rawDelay/604800)} weeks {int((rawDelay%604800)/86400)} days"
+    
     def styleSheets(self):
         return """
             table {
@@ -323,7 +336,7 @@ class RaptorChainExplorer(object):
         # return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
         
     def blocksTable(self, bkids):
-        blocks = [["Height", "Hash", "UNIX Timestamp", "Miner"]] + [[f'<a href="/block/{bk.height}">{bk.height}</a>', f'<a href="/block/{bk.proof}">{bk.proof}</a>', bk.timestamp, f'<a href="/address/{bk.miner}">{bk.miner}</a>'] for bk in [self.puller.loadBlock(bkid) for bkid in bkids]]
+        blocks = [["Height", "Hash", "Timestamp", "Miner"]] + [[f'<a href="/block/{bk.height}">{bk.height}</a>', f'<a href="/block/{bk.proof}">{bk.proof}</a>', f"{self.formatTime(time.time() - bk.timestamp)} ago", f'<a href="/address/{bk.miner}">{bk.miner}</a>'] for bk in [self.puller.loadBlock(bkid) for bkid in bkids]]
         return self.renderTable(lines=blocks)
         
         
