@@ -169,6 +169,10 @@ class RaptorChainPuller(object):
             self.transactions = coinInfo.get("transactions", 0)
             self.holders = coinInfo.get("holders", 0)
             self.supply = coinInfo.get("supply", 0)
+            self.blocks = list(filter(self.isPositive, list(range(self.chainLength-10, self.chainLength))))
+            
+        def isPositive(self, number):
+            return number >= 0
     
     class Block(object):
         def __init__(self, infoDict):
@@ -221,6 +225,22 @@ class RaptorChainExplorer(object):
             return f"{round(rawSupply / 1000, 3)}k"
         return f"{round(totalSupply, 3)}"
     
+    def styleSheets(self):
+        return """
+            table,
+            td {
+                border: 1px solid #333;
+            }
+
+            thead,
+            tfoot {
+                background-color: #333;
+                color: #fff;
+            }
+        """
+
+
+    
     def TransactionCard(self, txid):
         txObject = self.puller.loadTransaction(txid)
         return f"""
@@ -257,9 +277,44 @@ class RaptorChainExplorer(object):
                 
             </div>
         """
-		
+    
+    def refactortable(self, columns):
+        print(columns)
+        lines = [l.copy() for l in ([[]] * len(columns[0]))]
+        for columnid in range(len(columns)):
+            for lineid in range(len(lines)):
+                lines[lineid].append(columns[columnid][lineid])
+        print(lines)
+        return lines
+    
+    
+    def renderTable(self, lines=[], columns=None):
+        print(lines)
+        if columns:
+            lines = self.refactortable(columns)
+        fmtLines = []
+        for line in lines:
+            fmtLines.append("<tr>" + ("".join([f"<td>{v}</td>" for v in line])) + "</tr>")
+            
+        
+            
+    
+        return f"""<table>
+            <tbody>
+                {"".join(fmtLines)}
+            </tbody>
+        </table>"""
+        
     def txsMapped(self, txids):
         return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
+        
+    def blocksTable(self, bkids):
+        blocks = [["Height", "Hash"]] + [[bk.height, bk.proof] for bk in [self.puller.loadBlock(bkid) for bkid in bkids]]
+        return self.renderTable(lines=blocks)
+        
+        
+    def blocksMapped(self, bkids):
+        return ("<ul>" + ("".join([f'<li><a href="/block/{bkid}">{bkid}</a></li>' for bkid in bkids])) + "</ul>")
 
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
@@ -292,6 +347,10 @@ class RaptorChainExplorer(object):
                 <font size=6>Last 10 transactions</font>
                 <div>
                     {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
+                </div>
+                <font size=6>Last 10 blocks</font>
+                <div>
+                    {self.blocksTable(list(reversed([height for height in self.puller.loadStats().blocks])))}
                 </div>
             </div>
         """
@@ -336,6 +395,7 @@ class RaptorChainExplorer(object):
 				<head>
 					<title>{pageTitle}</title>
                     <script src="/searchScripts.js"></script>
+					<link rel="stylesheet" href="/style.css">
 					<link rel="icon" href="https://raptorchain.io/images/logo32px.png"></link>
 				</head>
                 <body>
@@ -370,6 +430,10 @@ explorer = RaptorChainExplorer()
 @app.route("/pageScripts.js")
 def getSearchScripts():
     return explorer.pageScripts()
+
+@app.route("/style.css")
+def getStyleSheets():
+    return explorer.styleSheets()
 
 @app.route("/block/<bkid>")
 def block(bkid):
