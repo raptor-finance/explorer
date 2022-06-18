@@ -318,7 +318,7 @@ class RaptorChainExplorer(object):
         
     def txsMapped(self, txids):
         txs = self.puller.loadBatchOfTransactions(txids)
-        mappable = [["Hash", "Value", "Sender"]] + [[f'<a href="/tx/{tx.txid}">{tx.txid}</a>', f"{self.formatAmount(tx.value)} {self.ticker}", tx.sender] for tx in txs]
+        mappable = [["Hash", "Value", "Sender", "Recipient"]] + [[f'<a href="/tx/{tx.txid}">{tx.txid[:48]}...</a>', f"{self.formatAmount(tx.value)} {self.ticker}", f"<a href=/address/{tx.sender}>{tx.sender}</a>", f"<a href=/address/{tx.recipient}>{tx.recipient}</a>"] for tx in txs]
         return self.renderTable(lines=mappable)
         # return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
         
