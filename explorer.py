@@ -62,6 +62,7 @@ class RaptorChainPuller(object):
             self.messages = []
             self.affectedAccounts = []
             self.typeName = ""
+            self.value = 0
             if (self.txtype == 0): # legacy transfer
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
@@ -139,6 +140,7 @@ class RaptorChainPuller(object):
             self.txid = w3.soliditySha3(["string"], [tx["data"]]).hex()
             self.indexToCheck = txData.get("indexToCheck", 0)
             
+            
             # self.PoW = ""
             # self.endTimeStamp = 0
             
@@ -199,6 +201,11 @@ class RaptorChainPuller(object):
     def loadTransaction(self, txid):
         _raw = requests.get(f"{self.node}/get/transactions/{txid}").json().get("result")[0]
         return self.Transaction(_raw)
+        
+    def loadBatchOfTransactions(self, txids):
+        formattedTxids = ",".join(txids)
+        _raws = requests.get(f"{self.node}/get/transactions/{formattedTxids}").json().get("result")
+        return [self.Transaction(_raw) for _raw in _raws]
     
     def loadAccount(self, address):
         _raw = requests.get(f"{self.node}/accounts/accountInfo/{address}").json().get("result")
@@ -218,18 +225,23 @@ class RaptorChainExplorer(object):
         self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
         self.ticker = "tRPTR"
 
-    def formatSupply(self, rawSupply):
-        if rawSupply >= 1000000:
-            return f"{round(rawSupply / 1000000, 3)}M"
-        if rawSupply >= 1000:
-            return f"{round(rawSupply / 1000, 3)}k"
-        return f"{round(totalSupply, 3)}"
+    def formatAmount(self, rawAmount):
+        _withoutDecimals = rawAmount / (10**18)
+        if _withoutDecimals >= 1000000:
+            return f"{round(_withoutDecimals / 1000000, 3)}M"
+        if _withoutDecimals >= 1000:
+            return f"{round(_withoutDecimals / 1000, 3)}k"
+        return f"{round(_withoutDecimals, 3)}"
     
     def styleSheets(self):
         return """
+            table {
+                border: 1px solid #333;
+            }
+            
             table,
             td {
-                border: 1px solid #333;
+                # border: 1px solid #333;
             }
 
             thead,
@@ -279,7 +291,6 @@ class RaptorChainExplorer(object):
         """
     
     def refactortable(self, columns):
-        print(columns)
         lines = [l.copy() for l in ([[]] * len(columns[0]))]
         for columnid in range(len(columns)):
             for lineid in range(len(lines)):
@@ -288,8 +299,7 @@ class RaptorChainExplorer(object):
         return lines
     
     
-    def renderTable(self, lines=[], columns=None):
-        print(lines)
+    def renderTable(self, lines=[], columns=None, elementid=None):
         if columns:
             lines = self.refactortable(columns)
         fmtLines = []
@@ -299,17 +309,21 @@ class RaptorChainExplorer(object):
         
             
     
-        return f"""<table>
+        return f"""<table {f"id={elementid}" if elementid else ""}>
             <tbody>
                 {"".join(fmtLines)}
             </tbody>
         </table>"""
         
+        
     def txsMapped(self, txids):
-        return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
+        txs = self.puller.loadBatchOfTransactions(txids)
+        mappable = [["Hash", "Value", "Sender"]] + [[f'<a href="/tx/{tx.txid}">{tx.txid}</a>', f"{self.formatAmount(tx.value)} {self.ticker}", tx.sender] for tx in txs]
+        return self.renderTable(lines=mappable)
+        # return ("<ul>" + ("".join([f'<li><a href="/tx/{txid}">{txid}</a></li>' for txid in txids])) + "</ul>")
         
     def blocksTable(self, bkids):
-        blocks = [["Height", "Hash"]] + [[bk.height, bk.proof] for bk in [self.puller.loadBlock(bkid) for bkid in bkids]]
+        blocks = [["Height", "Hash", "UNIX Timestamp", "Miner"]] + [[f'<a href="/block/{bk.height}">{bk.height}</a>', f'<a href="/block/{bk.proof}">{bk.proof}</a>', bk.timestamp, f'<a href="/address/{bk.miner}">{bk.miner}</a>'] for bk in [self.puller.loadBlock(bkid) for bkid in bkids]]
         return self.renderTable(lines=blocks)
         
         
@@ -360,7 +374,7 @@ class RaptorChainExplorer(object):
         return f"""
             <div>
                 <div><font size=6>Stats</font></div>
-                <div>Coin supply : {self.formatSupply(stats.supply / (10**18))} {self.ticker}</div>
+                <div>Coin supply : {self.formatAmount(stats.supply)} {self.ticker}</div>
                 <div>Holders : {stats.holders}</div>
                 <div>Chain length : {stats.chainLength}</div>
             </div>
