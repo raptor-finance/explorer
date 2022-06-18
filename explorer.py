@@ -66,7 +66,7 @@ class RaptorChainPuller(object):
             if (self.txtype == 0): # legacy transfer
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
-                self.value = max(int(txData.get("tokens")), 0)
+                self.value = max(float(txData.get("tokens")), 0)
                 self.affectedAccounts = [self.sender, self.recipient]
                 self.gasprice = 0
                 self.gasLimit = 69000
@@ -224,9 +224,10 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
         self.ticker = "tRPTR"
+        self.decimals = 0
 
     def formatAmount(self, rawAmount):
-        _withoutDecimals = rawAmount / (10**18)
+        _withoutDecimals = rawAmount / (10**self.decimals)
         if _withoutDecimals >= 1000000:
             return f"{round(_withoutDecimals / 1000000, 3)}M"
         if _withoutDecimals >= 1000:
