@@ -470,6 +470,10 @@ explorer = RaptorChainExplorer()
 def getSearchScripts():
     return explorer.pageScripts()
 
+@app.route("/searchScripts.js")
+def getSearchScripts():
+    return explorer.pageScripts()
+
 @app.route("/style.css")
 def getStyleSheets():
     return explorer.styleSheets()
