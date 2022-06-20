@@ -222,7 +222,7 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
-        self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
+        self.puller = RaptorChainPuller("http://localhost:6969/")
         self.ticker = "tRPTR"
         self.decimals = 18
         self.publicNode = "https://rpc-testnet.raptorchain.io/"
