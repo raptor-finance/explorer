@@ -296,13 +296,6 @@ class RaptorChainExplorer(object):
                 </div>
             </div>
         """
-
-    def showTransaction(self, tx):
-        return f"""
-            <div>
-                
-            </div>
-        """
     
     def refactortable(self, columns):
         lines = [l.copy() for l in ([[]] * len(columns[0]))]
