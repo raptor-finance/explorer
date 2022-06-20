@@ -373,11 +373,11 @@ class RaptorChainExplorer(object):
 			<font size=10>RaptorChain Explorer</font>
             <div style="border: solid; padding-left: 1%;">
                 <font size=6>Last 10 transactions</font>
-                <div>
+                <div id="txsContainerHomepage">
                     {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
                 </div>
                 <font size=6>Last 10 blocks</font>
-                <div>
+                <div id="blocksContainerHomepage">
                     {self.blocksTable(list(reversed([height for height in self.puller.loadStats().blocks])))}
                 </div>
             </div>
@@ -425,7 +425,7 @@ class RaptorChainExplorer(object):
                     fmtLines.push("<tr>" + (fmtItems.join("")) + "</tr>")
                 }
                 return `<table><tbody>${fmtLines.join("")}</tbody></table>`
-            }            
+            }
         """
 		
     def pageTemplate(self, subtemplate, pageTitle="RaptorChain Explorer"):
