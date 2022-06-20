@@ -467,7 +467,7 @@ CORS(app)
 explorer = RaptorChainExplorer()
 
 @app.route("/pageScripts.js")
-def getSearchScripts():
+def getPageScripts():
     return explorer.pageScripts()
 
 @app.route("/searchScripts.js")
