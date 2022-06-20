@@ -415,6 +415,17 @@ class RaptorChainExplorer(object):
 				return (await (await fetch("https://rpc-testnet.raptorchain.io/chain/getlastblock")).json()).result.txsRoot
 			}
 			
+            function renderTable(lines) {
+                let fmtLines = [];
+                for (let n=0; n<lines.length; n++) {
+                    fmtItems = [];
+                    for (let o=0; o<lines[n].length; o++) {
+                        fmtItems.push(`<td>${lines[n][o]}</td>`);
+                    }
+                    fmtLines.push("<tr>" + (fmtItems.join("")) + "</tr>")
+                }
+                return `<table><tbody>${fmtLines.join("")}</tbody></table>`
+            }            
         """
 		
     def pageTemplate(self, subtemplate, pageTitle="RaptorChain Explorer"):
@@ -422,7 +433,7 @@ class RaptorChainExplorer(object):
             <html>
 				<head>
 					<title>{pageTitle}</title>
-                    <script src="/searchScripts.js"></script>
+                    <script src="/pageScripts.js"></script>
 					<link rel="stylesheet" href="/style.css">
 					<link rel="icon" href="https://raptorchain.io/images/logo32px.png"></link>
 				</head>
