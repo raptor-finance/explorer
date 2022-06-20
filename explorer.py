@@ -225,6 +225,7 @@ class RaptorChainExplorer(object):
         self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
         self.ticker = "tRPTR"
         self.decimals = 18
+        self.publicNode = "https://rpc-testnet.raptorchain.io/"
 
     def formatAmount(self, rawAmount):
         _withoutDecimals = rawAmount / (10**self.decimals)
@@ -373,6 +374,7 @@ class RaptorChainExplorer(object):
                 <div id="blocksContainerHomepage">
                     {self.blocksTable(list(reversed([height for height in self.puller.loadStats().blocks])))}
                 </div>
+				<script src="/homePageScripts.js"></script>
             </div>
         """
 
@@ -396,6 +398,70 @@ class RaptorChainExplorer(object):
                 }
                 return `/tx/${_search}`;
             }
+			
+			class RaptorChainInterface {
+				// class Transaction {
+					// constructor(txjson) {
+						// this.txdata = JSON.parse(txjson);
+						// this.type = this.txdata.type;
+						// if (this.type == 0) {
+							// this.sender = this.txdata.from;
+							// this.recipient = this.txdata.to;
+							// this.value = txdata.tokens;
+						// }
+						// else if this.type == 1 {
+							// this.sender = this.txdata.from;
+							// this.recipient = this.txdata.to;
+							// this.value = txdata.tokens;
+						// }
+					// }
+				// }
+				
+				constructor(nodeaddr) {
+					this.node = nodeaddr;
+				}
+				
+				async fetchJSON(url) {
+					return (await (await fetch(url))).json();
+				}
+				
+				async getBlock(bkid) {
+					if (bkid.length == 66) {
+						return (await this.fetchJSON(`${this.node}/chain/blockByHash/${bkid}`)).result;
+					}
+					if (bkid.length == 64) {
+						return (await this.fetchJSON(`${this.node}/chain/blockByHash/0x${bkid}`)).result;
+					}
+					if (Number.isInteger(Number(bkid)) && Number(bkid) >= 0) {
+						return (await this.fetchJSON(`${this.node}/chain/block/${bkid}`)).result;
+					}
+				}
+				
+				async getChainLength() {
+					return (await this.fetchJSON(`${this.node}/chain/length`)).result;
+				}
+				
+				async getRawTransaction(txid) {
+					return (await this.fetchJSON(`${this.node}/get/transactions/${txid}`)).result[0];
+				}
+				
+				async getAccount(address) {
+					return (await this.fetchJSON(`${this.node}/accounts/accountInfo/${address}`));
+				}
+				
+				async getNLastBlocks(N) {
+					let _chainlength = (await this.getChainLength());
+					let blocks = [];
+					for (let n=_chainlength-1; n>=Math.max(_chainlength-N, 0); n--) {
+						blocks.push(await this.getBlock(n));
+					}
+					return blocks;
+				}
+				
+				async systemRoot() {
+					return (await (await fetch(`https://${this.node}/chain/getlastblock`)).json()).result.txsRoot;
+				}
+			}
             
             function handleSearch() {
                 _search = document.getElementById("searchInput").value;
@@ -403,23 +469,51 @@ class RaptorChainExplorer(object):
 				window.location.replace(_url);
 //                open(_url);
             }
-            
-            async function systemRoot() {
-				return (await (await fetch("https://rpc-testnet.raptorchain.io/chain/getlastblock")).json()).result.txsRoot
-			}
 			
-            function renderTable(lines) {
-                let fmtLines = [];
-                for (let n=0; n<lines.length; n++) {
-                    fmtItems = [];
-                    for (let o=0; o<lines[n].length; o++) {
-                        fmtItems.push(`<td>${lines[n][o]}</td>`);
-                    }
-                    fmtLines.push("<tr>" + (fmtItems.join("")) + "</tr>")
-                }
-                return `<table><tbody>${fmtLines.join("")}</tbody></table>`
-            }
+			class Rendering {
+				constructor(puller) {
+					this.puller = puller;
+				}
+				
+				renderTable(lines) {
+					let fmtLines = [];
+					for (let n=0; n<lines.length; n++) {
+						let fmtItems = [];
+						for (let o=0; o<lines[n].length; o++) {
+							fmtItems.push(`<td>${lines[n][o]}</td>`);
+						}
+						fmtLines.push("<tr>" + (fmtItems.join("")) + "</tr>")
+					}
+					return `<table><tbody>${fmtLines.join("")}</tbody></table>`
+				}
+			
+				renderBlockList(blocks) {
+					let _fmtList = [["Height", "Hash", "Timestamp", "Miner"]];
+					for (let n=0; n<blocks.length; n++) {
+						let bk = blocks[n];
+						_fmtList.push([`<a href="/block/${bk.height}">${bk.height}</a>`, `<a href="/block/${bk.proof}">${bk.miningData.proof}</a>`, bk.timestamp,`<a href="/address/${bk.miningData.miner}">${bk.miningData.miner}</a>`]);
+					}
+					return this.renderTable(_fmtList);
+				}
+			}
         """
+		
+    def initScripts(self):
+        return f"""
+            // HAS TO BE LOADED AFTER PAGE SCRIPTS
+			chain = new RaptorChainInterface("{self.publicNode}");
+			rendering = new Rendering(chain);
+			// BUT BEFORE PAGE-SPECIFIC SCRIPTS
+        """
+
+    def homePageScripts(self):
+        return """
+			async function refreshBlocks() {
+				document.getElementById("blocksContainerHomepage").innerHTML = rendering.renderBlockList(await chain.getNLastBlocks(10));
+			}
+			refreshBlocks();
+        """
+		
 		
     def pageTemplate(self, subtemplate, pageTitle="RaptorChain Explorer"):
         return f"""
@@ -427,6 +521,7 @@ class RaptorChainExplorer(object):
 				<head>
 					<title>{pageTitle}</title>
                     <script src="/pageScripts.js"></script>
+                    <script src="/initScripts.js"></script>
 					<link rel="stylesheet" href="/style.css">
 					<link rel="icon" href="https://raptorchain.io/images/logo32px.png"></link>
 				</head>
@@ -466,6 +561,15 @@ def getPageScripts():
 @app.route("/searchScripts.js")
 def getSearchScripts():
     return explorer.pageScripts()
+
+@app.route("/initScripts.js")
+def getInitScripts():
+    return explorer.initScripts()
+
+@app.route("/homePageScripts.js")
+def getHomePageScripts():
+    return explorer.homePageScripts()
+
 
 @app.route("/style.css")
 def getStyleSheets():
