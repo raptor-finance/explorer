@@ -271,7 +271,7 @@ class RaptorChainExplorer(object):
         txObject = self.puller.loadTransaction(txid)
         return f"""
             <h3>Transaction {txid}</h3>
-            <div style="border: solid; padding-left: 1%">
+            <div id="transactionCard" style="border: solid; padding-left: 1%">
                 <div>
                     <div>Sender : <a href="/address/{txObject.sender}">{txObject.sender}</a></div>
                     <div>Recipient : <a href="/address/{txObject.recipient}">{txObject.recipient}</a></div>
@@ -287,7 +287,7 @@ class RaptorChainExplorer(object):
         block = self.puller.loadBlock(bkid)
         return f"""
             <h3>{f"Beacon block {block.height}" if block.height else "Genesis Block"}</h3>
-            <div style="border: solid; padding-left: 1%">
+            <div id="blockCard" style="border: solid; padding-left: 1%">
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
@@ -371,7 +371,7 @@ class RaptorChainExplorer(object):
     def homepageCard(self):
         return f"""
 			<font size=10>RaptorChain Explorer</font>
-            <div style="border: solid; padding-left: 1%;">
+            <div style="border: solid; padding-left: 1%; padding-right: 5%; padding-bottom: 1%">
                 <font size=6>Last 10 transactions</font>
                 <div id="txsContainerHomepage">
                     {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
@@ -448,7 +448,7 @@ class RaptorChainExplorer(object):
                     <div>
                         <div style="width: 1%; height: 1;"></div>
                         <div style="width: 2%; height: 1;"></div>
-                        <div style="width: 95%; display: inline-block;">
+                        <div style="display: inline-block;">
 							<div>
 								{subtemplate}
 							</div>
