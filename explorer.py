@@ -224,7 +224,7 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
         self.ticker = "tRPTR"
-        self.decimals = 0
+        self.decimals = 18
 
     def formatAmount(self, rawAmount):
         _withoutDecimals = rawAmount / (10**self.decimals)
