@@ -267,6 +267,11 @@ class RaptorChainExplorer(object):
 				padding-top: 1px;
 			}
 			
+			.pageContainer {
+				margin-left: auto;
+				margin-right: auto;
+			}
+			
 			.networkStats {
 				border: solid #101010;
 				background-color: #505050;
