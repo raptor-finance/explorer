@@ -161,6 +161,8 @@ class RaptorChainPuller(object):
             self.storage = infoDict.get("storage", {})
             self.transactions = infoDict.get("transactions", [])
             self.tempStorage = infoDict.get("storage", {})
+            self.nonce = infoDict.get("nonce", 0)
+            self.code = bytes.fromhex(infoDict.get("code", "").replace("0x", ""))
     
     class Stats(object):
         def __init__(self, infoDict):
