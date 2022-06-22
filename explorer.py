@@ -585,7 +585,7 @@ class RaptorChainExplorer(object):
 					<!-- <div style="border: solid; width: 39%; display: inline-block; padding-left: 1%"> -->
 						<!-- {self.networkStatsCard()} -->
 					<!-- </div> -->
-                    <div>
+                    <div class="pageContainer">
                         <div style="width: 1%; height: 1;"></div>
                         <div style="width: 2%; height: 1;"></div>
                         <div style="display: inline-block;">
