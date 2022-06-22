@@ -222,7 +222,7 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
-        self.puller = RaptorChainPuller("http://localhost:6969/")
+        self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
         self.ticker = "tRPTR"
         self.decimals = 18
         self.publicNode = "https://rpc-testnet.raptorchain.io/"
@@ -250,9 +250,43 @@ class RaptorChainExplorer(object):
     
     def styleSheets(self):
         return """
+			body {
+				background-color: #303030;
+				color: #ffffff;
+			}
+		
+			.cardContainer {
+				border: solid #101010;
+				padding-left: 1%;
+				padding-right: 5%;
+				padding-bottom: 1%;
+				background-color: #505050;
+				color: #ffffff;
+				padding-top: 1px;
+			}
+			
+			.networkStats {
+				border: solid #101010;
+				background-color: #505050;
+				padding-left: 1%;
+			}
+			
+			.cardTitle {
+				color: #81C2BD;
+			}
+			
+			a {
+				color: #5255e4;
+			}
+			
             table {
                 border: 1px solid #333;
             }
+			
+			input, button {
+				background-color: #505050;
+				color: #ffffff;
+			}
             
             table,
             td {
@@ -264,6 +298,10 @@ class RaptorChainExplorer(object):
                 background-color: #333;
                 color: #fff;
             }
+			
+			footer {
+				color: #ffffff;
+			}
         """
 
 
@@ -271,8 +309,8 @@ class RaptorChainExplorer(object):
     def TransactionCard(self, txid):
         txObject = self.puller.loadTransaction(txid)
         return f"""
-            <h3>Transaction {txid}</h3>
-            <div id="transactionCard" style="border: solid; padding-left: 1%">
+            <h3 class="cardTitle">Transaction {txid}</h3>
+            <div class="cardContainer" id="transactionCard">
                 <div>
                     <div>Sender : <a href="/address/{txObject.sender}">{txObject.sender}</a></div>
                     <div>Recipient : <a href="/address/{txObject.recipient}">{txObject.recipient}</a></div>
@@ -287,8 +325,8 @@ class RaptorChainExplorer(object):
     def BlockCard(self, bkid):
         block = self.puller.loadBlock(bkid)
         return f"""
-            <h3>{f"Beacon block {block.height}" if block.height else "Genesis Block"}</h3>
-            <div id="blockCard" style="border: solid; padding-left: 1%">
+            <h3 class="cardTitle">{f"Beacon block {block.height}" if block.height else "Genesis Block"}</h3>
+            <div class="cardContainer" id="blockCard"">
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
@@ -341,11 +379,10 @@ class RaptorChainExplorer(object):
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
         return f"""
-            <h3>Account {address}</h3>
-			<div>
-				Balance : {acctObject.balance / (10**18)} {self.ticker}
-			</div>
-			<div style="border: solid; padding-left: 1%">
+            <h3 class="cardTitle">Account {address}</h3>
+			<div class="cardContainer">
+				<div>Balance : {acctObject.balance / (10**18)} {self.ticker}</div>
+				<div>Nonce : {acctObject.nonce}</div>
 				<h4>Transaction history</h4>
 				{self.txsMapped(list(reversed(acctObject.transactions[1:])))}
 			</div>
@@ -357,15 +394,15 @@ class RaptorChainExplorer(object):
 				<div>
 					<a href="/"><img src="https://raptorchain.io/images/logo.png" width=40 height=40></img></a>
 					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
-					<span style="width: 30%; padding-right: 1%; float: right;"><div style="border: solid; padding-left: 1%">{self.networkStatsCard()}</div></span>
+					<span style="width: 30%; padding-right: 1%; float: right;"><div class="networkStats">{self.networkStatsCard()}</div></span>
 				</div>
             </nav>
         """
 
     def homepageCard(self):
         return f"""
-			<font size=10>RaptorChain Explorer</font>
-            <div style="border: solid; padding-left: 1%; padding-right: 5%; padding-bottom: 1%">
+			<font class="cardTitle" size=10>RaptorChain Explorer</font>
+            <div class="cardContainer">
                 <font size=6>Last 10 transactions</font>
                 <div id="txsContainerHomepage">
                     {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
