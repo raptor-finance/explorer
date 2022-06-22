@@ -475,6 +475,18 @@ class RaptorChainExplorer(object):
 					this.puller = puller;
 				}
 				
+				leftPadding(num, paddingValue) {
+					let strnum = String(num);
+					return (("0").repeat(paddingValue - strnum.length) + strnum)
+				}
+				
+				formatTimestamp(inSeconds) {
+					const dte = (new Date(inSeconds*1000));
+					let time = `${dte.getHours()}:${this.leftPadding(dte.getMinutes(), 2)}:${this.leftPadding(dte.getSeconds(),2)}`;
+					let date = `${this.leftPadding(dte.getDate())}/${this.leftPadding(dte.getMonth(), 2)}/${dte.getFullYear()}`;
+					return [time,date]
+				}
+				
 				renderTable(lines) {
 					let fmtLines = [];
 					for (let n=0; n<lines.length; n++) {
@@ -488,10 +500,11 @@ class RaptorChainExplorer(object):
 				}
 			
 				renderBlockList(blocks) {
-					let _fmtList = [["Height", "Hash", "Timestamp", "Miner"]];
+					let _fmtList = [["Height", "Hash", "Time", "Date", "Miner"]];
 					for (let n=0; n<blocks.length; n++) {
 						let bk = blocks[n];
-						_fmtList.push([`<a href="/block/${bk.height}">${bk.height}</a>`, `<a href="/block/${bk.proof}">${bk.miningData.proof}</a>`, bk.timestamp,`<a href="/address/${bk.miningData.miner}">${bk.miningData.miner}</a>`]);
+						let [_time, _date] = this.formatTimestamp(bk.timestamp);
+						_fmtList.push([`<a href="/block/${bk.height}">${bk.height}</a>`, `<a href="/block/${bk.proof}">${bk.miningData.proof}</a>`, _time, _date, `<a href="/address/${bk.miningData.miner}">${bk.miningData.miner}</a>`]);
 					}
 					return this.renderTable(_fmtList);
 				}
