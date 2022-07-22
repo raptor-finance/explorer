@@ -59,6 +59,8 @@ class RaptorChainPuller(object):
             self.contractDeployment = False
             self.txtype = (txData.get("type") or 0)
             self.data = b""
+            self.sender = "0x0000000000000000000000000000000000000000"
+            self.recipient = "0x0000000000000000000000000000000000000000"
             self.messages = []
             self.affectedAccounts = []
             self.typeName = ""
@@ -201,12 +203,12 @@ class RaptorChainPuller(object):
         
     
     def loadTransaction(self, txid):
-        _raw = requests.get(f"{self.node}/get/transactions/{txid}").json().get("result")[0]
-        return self.Transaction(_raw)
+        _raw = requests.get(f"{self.node}/get/transactions/{txid}").json().get("result")
+        return (self.Transaction(_raw[0]) if len(_raw) else None)
         
     def loadBatchOfTransactions(self, txids):
         formattedTxids = ",".join(txids)
-        _raws = requests.get(f"{self.node}/get/transactions/{formattedTxids}").json().get("result")
+        _raws = requests.get(f"{self.node}/get/transactions/{formattedTxids}").json().get("result") if len(txids) else []
         return [self.Transaction(_raw) for _raw in _raws]
     
     def loadAccount(self, address):
@@ -224,10 +226,12 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
-        self.puller = RaptorChainPuller("https://rpc-testnet.raptorchain.io/")
-        self.ticker = "tRPTR"
+        self.puller = RaptorChainPuller("http://localhost:4242/")
+        self.ticker = "RPTR"
+        self.testnet = False
         self.decimals = 18
-        self.publicNode = "https://rpc-testnet.raptorchain.io/"
+        self.port = 7000
+        self.publicNode = "https://rpc.raptorchain.io/"
 
     def formatAmount(self, rawAmount):
         _withoutDecimals = rawAmount / (10**self.decimals)
@@ -370,6 +374,7 @@ class RaptorChainExplorer(object):
         
         
     def txsMapped(self, txids):
+        print(txids)
         txs = self.puller.loadBatchOfTransactions(txids)
         mappable = [["Hash", "Value", "Sender", "Recipient"]] + [[f'<a href="/tx/{tx.txid}">{tx.txid[:48]}...</a>', f"{self.formatAmount(tx.value)} {self.ticker}", f"<a href=/address/{tx.sender}>{tx.sender}</a>", f"<a href=/address/{tx.recipient}>{tx.recipient}</a>"] for tx in txs]
         return self.renderTable(lines=mappable)
@@ -408,7 +413,7 @@ class RaptorChainExplorer(object):
 
     def homepageCard(self):
         return f"""
-			<font class="cardTitle" size=10>RaptorChain Explorer</font>
+			<font class="cardTitle" size=10>RaptorChain {'Testnet' if self.testnet else 'Mainnet'} Explorer</font>
             <div class="cardContainer">
                 <font size=6>Last 10 transactions</font>
                 <div id="txsContainerHomepage">
@@ -548,7 +553,7 @@ class RaptorChainExplorer(object):
 					for (let n=0; n<blocks.length; n++) {
 						let bk = blocks[n];
 						let [_time, _date] = this.formatTimestamp(bk.timestamp);
-						_fmtList.push([`<a href="/block/${bk.height}">${bk.height}</a>`, `<a href="/block/${bk.proof}">${bk.miningData.proof}</a>`, _time, _date, `<a href="/address/${bk.miningData.miner}">${bk.miningData.miner}</a>`]);
+						_fmtList.push([`<a href="/block/${bk.height}">${bk.height}</a>`, `<a href="/block/${bk.miningData.proof}">${bk.miningData.proof}</a>`, _time, _date, `<a href="/address/${bk.miningData.miner}">${bk.miningData.miner}</a>`]);
 					}
 					return this.renderTable(_fmtList);
 				}
@@ -652,4 +657,4 @@ def getApp():
     return app
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=explorer.port)
