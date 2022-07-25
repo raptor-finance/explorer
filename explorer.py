@@ -435,7 +435,7 @@ class RaptorChainExplorer(object):
             <div>
                 <div><font size=6>Stats</font></div>
                 <div>{self.ticker} on mainnet : {self.formatAmount(stats.supply)} {self.ticker}</div>
-                <div>Total burned : {self.formatAmount(burned)} {self.ticker}</div>
+                <div>Total burned &#x1f525; : {self.formatAmount(burned)} {self.ticker}</div>
                 <div>Holders : {stats.holders}</div>
                 <div>Chain length : {stats.chainLength}</div>
             </div>
