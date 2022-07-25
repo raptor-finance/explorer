@@ -232,6 +232,7 @@ class RaptorChainExplorer(object):
         self.decimals = 18
         self.port = 7000
         self.publicNode = "https://rpc.raptorchain.io/"
+        self.burnAddress = "0x000000000000000000000000000000000000dead"
 
     def formatAmount(self, rawAmount):
         _withoutDecimals = rawAmount / (10**self.decimals)
@@ -429,10 +430,12 @@ class RaptorChainExplorer(object):
 
     def networkStatsCard(self):
         stats = self.puller.loadStats()
+        burned = self.puller.loadAccount(self.burnAddress).balance
         return f"""
             <div>
                 <div><font size=6>Stats</font></div>
-                <div>Coin supply : {self.formatAmount(stats.supply)} {self.ticker}</div>
+                <div>{self.ticker} on mainnet : {self.formatAmount(stats.supply)} {self.ticker}</div>
+                <div>Total burned : {self.formatAmount(burned)} {self.ticker}</div>
                 <div>Holders : {stats.holders}</div>
                 <div>Chain length : {stats.chainLength}</div>
             </div>
