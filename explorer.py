@@ -535,7 +535,7 @@ class RaptorChainExplorer(object):
 				formatTimestamp(inSeconds) {
 					const dte = (new Date(inSeconds*1000));
 					let time = `${dte.getHours()}:${this.leftPadding(dte.getMinutes(), 2)}:${this.leftPadding(dte.getSeconds(),2)}`;
-					let date = `${this.leftPadding(dte.getDate())}/${this.leftPadding(dte.getMonth(), 2)}/${dte.getFullYear()}`;
+					let date = `${this.leftPadding(dte.getDate())}/${this.leftPadding(dte.getMonth() + 1, 2)}/${dte.getFullYear()}`;
 					return [time,date]
 				}
 				
