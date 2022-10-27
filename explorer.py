@@ -264,12 +264,13 @@ class RaptorChainExplorer(object):
 		
 			.cardContainer {
 				border: solid #101010;
-				padding-left: 1%;
+				padding-left: 15px;
 				padding-right: 5%;
 				padding-bottom: 1%;
 				background-color: #505050;
 				color: #ffffff;
-				padding-top: 1px;
+				padding-top: 20px;
+                border-radius: 50px;
 			}
 			
 			.pageContainer {
