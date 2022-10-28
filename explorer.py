@@ -226,7 +226,8 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
-        self.puller = RaptorChainPuller("http://localhost:4242/")
+#        self.puller = RaptorChainPuller("http://localhost:4242/")
+        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
@@ -269,6 +270,7 @@ class RaptorChainExplorer(object):
 				background-color: #505050;
 				color: #ffffff;
 				padding-top: 20px;
+				padding-bottom: 20px;
                 border-radius: 50px;
 			}
 			
@@ -278,9 +280,11 @@ class RaptorChainExplorer(object):
 			}
 			
 			.networkStats {
-				border: solid #101010;
+                border-radius: 25px;
 				background-color: #505050;
-				padding-left: 1%;
+				padding-left: 10px;
+				padding-top: 10px;
+				padding-bottom: 10px;
 			}
 			
 			.cardTitle {
@@ -292,8 +296,7 @@ class RaptorChainExplorer(object):
 			}
 			
             table {
-                padding-left: 10px;
-                padding-top: 10px;
+                padding: 10px;
 				background-color: #303030;
                 border-radius: 25px;
             }
