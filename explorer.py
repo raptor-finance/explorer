@@ -263,7 +263,6 @@ class RaptorChainExplorer(object):
 			}
 		
 			.cardContainer {
-				border: solid #101010;
 				padding-left: 15px;
 				padding-right: 5%;
 				padding-bottom: 1%;
@@ -293,7 +292,10 @@ class RaptorChainExplorer(object):
 			}
 			
             table {
-                border: 1px solid #333;
+                padding-left: 10px;
+                padding-top: 10px;
+				background-color: #303030;
+                border-radius: 25px;
             }
 			
 			input, button {
