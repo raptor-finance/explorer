@@ -4,7 +4,10 @@ from flask_cors import CORS
 from dataclasses import asdict, dataclass
 from typing import Optional
 from eth_utils import keccak
+from web3 import Web3, HTTPProvider
 from web3.auto import w3
+
+ERC20ABI = """[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}]"""
 
 class RaptorChainPuller(object):
     class Transaction(object):
@@ -192,8 +195,19 @@ class RaptorChainPuller(object):
             self.txsRoot = infoDict.get("txsRoot", "0x0000000000000000000000000000000000000000000000000000000000000000")
             self.transactions = list(filter(bool, infoDict.get("transactions", {})))
     
+    class Token(object):
+        def __init__(self, contractInstance):
+            self.contract = contractInstance
+            self.name = contractInstance.functions.name().call()
+            self.symbol = contractInstance.functions.symbol().call()
+            self.symbol = contractInstance.functions.symbol().call()
+            self.decimals = contractInstance.functions.decimals().call()
+            self.rawSupply = contractInstance.functions.totalSupply().call()
+            self.totalSupply = self.rawSupply / (10**self.decimals)
+    
     def __init__(self, node):
         self.node = node
+        self.web3 = Web3(HTTPProvider(f"{node}/web3"))
     
     def loadBlock(self, blockid):
         _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
@@ -214,6 +228,9 @@ class RaptorChainPuller(object):
     def loadAccount(self, address):
         _raw = requests.get(f"{self.node}/accounts/accountInfo/{address}").json().get("result")
         return self.Account(_raw)
+        
+    def loadToken(self, tokenAddr):
+        return self.Token(self.web3.eth.contract(address=w3.toChecksumAddress(tokenAddr), abi=ERC20ABI))
         
     def getLastNTxs(self, n):
         _raw = requests.get(f"{self.node}/get/nLastTxs/{n}").json().get("result")
@@ -404,6 +421,15 @@ class RaptorChainExplorer(object):
 				<div>Nonce : {acctObject.nonce}</div>
 				<h4>Transaction history</h4>
 				{self.txsMapped(list(reversed(acctObject.transactions[1:])))}
+			</div>
+        """
+        
+    def TokenCard(self, address):
+        tokenObject = self.puller.loadToken(address)
+        return f"""
+            <h3 class="cardTitle">{tokenObject.name} ({tokenObject.symbol})</h3>
+			<div class="cardContainer">
+				<div>Total supply : {tokenObject.totalSupply} {tokenObject.symbol}</div>
 			</div>
         """
         
@@ -615,7 +641,9 @@ class RaptorChainExplorer(object):
                     </div>
                 </body>
 				<footer>
-					<i>Made with &#x2764;&#xFE0F; and &#9749; by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">RaptorChain</a></i>
+                    <div>
+                        <i>Made with &#x2764;&#xFE0F; and &#9749; by <a href="https://github.com/ygboucherk">Yanis</a> from <a href="https://raptorchain.io">RaptorChain</a></i>
+                    </div>
 				</footer>
             </html>
         """
@@ -657,6 +685,10 @@ def tx(txid):
 @app.route("/address/<addr>")
 def address(addr):
     return explorer.pageTemplate(explorer.AccountCard(addr), f"RaptorChain address {addr}")
+
+@app.route("/token/<addr>")
+def token(addr):
+    return explorer.pageTemplate(explorer.TokenCard(addr), f"RaptorChain address {addr}")
 
 @app.route("/")
 def homepage():
