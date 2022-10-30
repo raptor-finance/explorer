@@ -276,15 +276,18 @@ class RaptorChainExplorer(object):
     def styleSheets(self):
         return """
 			body {
-				background-color: #303030;
+                background-color: #303030;
+                background: url("https://raptorchain.io/images/bg-main.jpg");
+                background-attachment: fixed;
 				color: #ffffff;
 			}
 		
 			.cardContainer {
+				margin-left: 15px;
 				padding-left: 15px;
 				padding-right: 5%;
 				padding-bottom: 1%;
-				background-color: #505050;
+				background-color: #21b451;
 				color: #ffffff;
 				padding-top: 20px;
 				padding-bottom: 20px;
@@ -298,7 +301,7 @@ class RaptorChainExplorer(object):
 			
 			.networkStats {
                 border-radius: 25px;
-				background-color: #505050;
+				background-color: #21b451;
 				padding-left: 10px;
 				padding-top: 10px;
 				padding-bottom: 10px;
@@ -319,7 +322,7 @@ class RaptorChainExplorer(object):
             }
 			
 			input, button {
-				background-color: #505050;
+				background-color: #4CAF50;
 				color: #ffffff;
 			}
             
@@ -467,7 +470,7 @@ class RaptorChainExplorer(object):
             <div>
                 <div><font size=6>Stats</font></div>
                 <div>{self.ticker} on mainnet : {self.formatAmount(stats.supply)} {self.ticker}</div>
-                <div>Total burned &#x1f525; : {self.formatAmount(burned)} {self.ticker}</div>
+                <div>Total gas burned &#x1f525; : {self.formatAmount(burned)} {self.ticker}</div>
                 <div>Holders : {stats.holders}</div>
                 <div>Chain length : {stats.chainLength}</div>
             </div>
