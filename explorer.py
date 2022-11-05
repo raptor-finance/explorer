@@ -243,8 +243,8 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
-#        self.puller = RaptorChainPuller("http://localhost:4242/")
-        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+        self.puller = RaptorChainPuller("http://localhost:4242/")
+#        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
