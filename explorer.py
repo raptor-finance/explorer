@@ -296,6 +296,7 @@ class RaptorChainPuller(object):
         self.node = node
         self.web3 = Web3(HTTPProvider(f"{node}/web3"))
         self.defi = self.DefiStats(self.web3)
+        self.lastRefresh = time.time()
     
     def loadBlock(self, blockid):
         _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
@@ -324,10 +325,15 @@ class RaptorChainPuller(object):
         _raw = requests.get(f"{self.node}/get/nLastTxs/{n}").json().get("result")
         return [self.Transaction(_rawtx) for _rawtx in _raw]
         
-        
     def loadStats(self):
         _raw = requests.get(f"{self.node}/stats").json().get("result")
         return self.Stats(_raw)
+        
+    def refresh(self):
+        if (time.time() > (self.lastRefresh - 300)): # if last refresh occured less than 5 minutes ago, keep cached value
+            return
+        self.lastRefresh = time.time()
+        self.defi.refresh()
         
 class RaptorChainExplorer(object):
     def __init__(self):
@@ -419,6 +425,16 @@ class RaptorChainExplorer(object):
 				background-color: #303030;
                 border-radius: 50px;
             }
+            
+            .searchStuff {
+                display: inline-block;
+            }
+            
+            .rptrLogo {
+				float: left;
+				display: inline-flex;
+            }
+			
 			
 			a {
 				color: #ffffff;
@@ -586,8 +602,8 @@ class RaptorChainExplorer(object):
         return f"""
             <nav>
 				<div>
-					<a href="/"><img src="https://raptorchain.io/images/logo.png" width=40 height=40></img></a>
-					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
+					<a class="rptrLogo" href="/"><img src="https://raptorchain.io/images/logo.png" width=55 height=55></img></a>
+					<input style="height: 59; width: 300" id="searchInput"></input><button style="height: 59; width: 100" onclick="handleSearch()">Search</button>
 					<span style="width: 50%; float: right;">{self.networkStatsCard()}</span>
 				</div>
             </nav>
@@ -771,6 +787,7 @@ class RaptorChainExplorer(object):
 		
 		
     def pageTemplate(self, subtemplate, pageTitle="RaptorChain Explorer"):
+        self.puller.refresh()
         return f"""
             <html>
 				<head>
