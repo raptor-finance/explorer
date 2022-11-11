@@ -414,7 +414,7 @@ class RaptorChainExplorer(object):
 			}
 			
 			.cardTitle {
-				color: #81C2BD;
+				color: #ffffff;
 			}
             
             .dexPair {
