@@ -249,12 +249,15 @@ class RaptorChainPuller(object):
                     self.reserve0formatted = 0.0
                     self.reserve1formatted = 0.0
                     
+                    # RPTR in pool
+                    self.RPTRTVL = 0
+                    
                     self.refresh()
                     
                 def refresh(self):
-                    print(self.contract.functions.getReserves().call())
                     (self.reserve0, self.reserve1, kLast) = self.contract.functions.getReserves().call()
                     (self.reserve0formatted, self.reserve1formatted) = ((self.reserve0 / (10**self.decimals0)), (self.reserve1 / (10**self.decimals1)))
+                    self.RPTRTVL = ((self.reserve0formatted if (self.token0 == WRPTRADDRESS) else 0) + (self.reserve1formatted if (self.token1 == WRPTRADDRESS) else 0))
             
             def __init__(self, _web3):
                 self.web3 = _web3
@@ -263,6 +266,7 @@ class RaptorChainPuller(object):
                 self.pairs = []
                 self.pairsLenghtLast = 0
                 self.fetchPairs()
+                self.tvl = 0 # RPTR tvl
                 
             def fetchPairs(self):
                 _l = self.factory.functions.allPairsLength().call()
@@ -272,10 +276,20 @@ class RaptorChainPuller(object):
             def refresh(self):
                 for _pair in self.pairs:
                     _pair.refresh()
+                self.tvl = sum([p.RPTRTVL for p in self.pairs])
+                
     
         def __init__(self, _web3):
             self.web3 = _web3
             self.raptorswap = self.RaptorSwap(_web3)
+            self.price = 0
+            self.tvl = 0
+            self.refresh()
+            
+        def refresh(self):
+            self.raptorswap.refresh()
+            self.price = float(requests.get("https://bsc.api.0x.org/swap/v1/quote?buyToken=BUSD&sellToken=0x44c99ca267c2b2646ceec72e898273085ab87ca5&sellAmount=1000000000000000000").json().get("price"))
+            self.tvl = self.raptorswap.tvl
             
     
     def __init__(self, node):
@@ -379,6 +393,18 @@ class RaptorChainExplorer(object):
 				padding-left: 10px;
 				padding-top: 10px;
 				padding-bottom: 10px;
+				padding-right: 10%;
+				float: right;
+				
+			}
+			
+			.defiStats {
+                border-radius: 25px;
+				background-color: #21b451;
+				padding-left: 10px;
+				padding-top: 10px;
+				padding-bottom: 10px;
+				float: right;
 			}
 			
 			.cardTitle {
@@ -395,7 +421,7 @@ class RaptorChainExplorer(object):
             }
 			
 			a {
-				color: #5255e4;
+				color: #ffffff;
 			}
 			
             table {
@@ -404,9 +430,16 @@ class RaptorChainExplorer(object):
                 border-radius: 25px;
             }
 			
-			input, button {
+			input {
+				background-color: #ffffff;
+				color: #000000;
+				border-radius: 10px;
+			}
+			
+			button {
 				background-color: #4CAF50;
 				color: #ffffff;
+				border-radius: 10px;
 			}
             
             table,
@@ -447,7 +480,7 @@ class RaptorChainExplorer(object):
         block = self.puller.loadBlock(bkid)
         return f"""
             <h3 class="cardTitle">{f"Beacon block {block.height}" if block.height else "Genesis Block"}</h3>
-            <div class="cardContainer" id="blockCard"">
+            <div class="cardContainer" id="blockCard">
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
@@ -555,7 +588,7 @@ class RaptorChainExplorer(object):
 				<div>
 					<a href="/"><img src="https://raptorchain.io/images/logo.png" width=40 height=40></img></a>
 					<input style="height: 45" id="searchInput"></input><button style="height: 45" onclick="handleSearch()">Search</button>
-					<span style="width: 30%; padding-right: 1%; float: right;"><div class="networkStats">{self.networkStatsCard()}</div></span>
+					<span style="width: 50%; float: right;">{self.networkStatsCard()}</span>
 				</div>
             </nav>
         """
@@ -576,18 +609,27 @@ class RaptorChainExplorer(object):
             </div>
         """
 
+
     def networkStatsCard(self):
         stats = self.puller.loadStats()
         burned = self.puller.loadAccount(self.burnAddress).balance
         return f"""
-            <div>
-                <div><font size=6>Stats</font></div>
-                <div>{self.ticker} on mainnet : {self.formatAmount(stats.supply)} {self.ticker}</div>
-                <div>Total gas burned &#x1f525; : {self.formatAmount(burned)} {self.ticker}</div>
-                <div>Holders : {stats.holders}</div>
-                <div>Chain length : {stats.chainLength}</div>
-            </div>
-        
+			<div class="networkStats">
+				<div>
+
+					<div>{self.ticker} on mainnet : {self.formatAmount(stats.supply)} {self.ticker}</div>
+					<div>Total gas burned &#x1f525; : {self.formatAmount(burned)} {self.ticker}</div>
+					<div>Holders : {stats.holders}</div>
+					<div>Chain length : {stats.chainLength}</div>
+				</div>
+			</div>
+			<div class="networkStats" style="margin-right: 3px">
+				<div>
+					<div><font size=6><a href="/defi">Raptor DeFi</a></font></div>
+					<div>Raptor Price : <a href="https://www.dextools.io/app/bnb/pair-explorer/0x75d2d2abd51b725e3d80238276bd80c65d1674d7">{round(self.puller.defi.price, 7)}$</a></div>
+					<div>TVL : {int(self.puller.defi.tvl)} RPTR</div>
+				</div>
+			</div>
         """
 
     def pageScripts(self):
