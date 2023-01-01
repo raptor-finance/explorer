@@ -208,6 +208,7 @@ class RaptorChainPuller(object):
                 (self.to, self.chainid, self.payload) = eth_abi.decode_abi(["address", "uint256", "bytes"], bytes.fromhex(msg.replace("0x", "")))
                 if w3.toChecksumAddress(self.to) in CALLROUTERS:
                     (self._from, self.to, self.gasLimit, self.payload) = eth_abi.decode_abi(["address", "address", "uint256", "bytes"], self.payload)
+                    
         def __init__(self, infoDict):
             miningData = infoDict.get("miningData", {})
             self.miner = miningData.get("miner", "0x0000000000000000000000000000000000000000")
