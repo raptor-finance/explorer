@@ -1,4 +1,4 @@
-import requests, rlp, flask, json, time
+import requests, rlp, flask, json, time, eth_abi
 from rlp.sedes import Binary, big_endian_int, binary
 from flask_cors import CORS
 from dataclasses import asdict, dataclass
@@ -10,6 +10,8 @@ from web3.auto import w3
 ROUTERADDRESS = "0x397D194abF71094247057642003EaCd463b7931f" # address of RaptorSwap router
 FACTORYADDRESS = "0xB8F7aAdaC20Cd74237dDAB7AC7ead317BF049Fa3" # address of RaptorSwap factory
 WRPTRADDRESS = "0xeF7cADE66695f4cD8a535f7916fBF659936818C4" # address of WRPTR
+
+CALLROUTERS = ["0x47C0D110eEB1357225B707E0515B17Ab0EB1CaF6"] # routing addresses meant to route user-initiated calls (executed in a lower permission context)
 
 # ABIs to interact with smart contracts
 ERC20ABI = """[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}]"""
@@ -199,6 +201,13 @@ class RaptorChainPuller(object):
             return number >= 0
     
     class Block(object):
+        class Message(object):
+            def __init__(self, msg):
+                self.gasLimit = 0
+                self._from = "SYSTEM"
+                (self.to, self.chainid, self.payload) = eth_abi.decode_abi(["address", "uint256", "bytes"], bytes.fromhex(msg.replace("0x", "")))
+                if w3.toChecksumAddress(self.to) in CALLROUTERS:
+                    (self._from, self.to, self.gasLimit, self.payload) = eth_abi.decode_abi(["address", "address", "uint256", "bytes"], self.payload)
         def __init__(self, infoDict):
             miningData = infoDict.get("miningData", {})
             self.miner = miningData.get("miner", "0x0000000000000000000000000000000000000000")
@@ -206,6 +215,7 @@ class RaptorChainPuller(object):
             self.parent = infoDict.get("parent", "0x0000000000000000000000000000000000000000000000000000000000000000")
             self.messages = infoDict.get("decodedMessages", [])
             self.height = infoDict.get("height", 0)
+            self.decodedMessages = [self.Message(msg) for msg in self.messages] if (self.height > 0) else []
             self.timestamp = infoDict.get("timestamp", 0)
             self.txsRoot = infoDict.get("txsRoot", "0x0000000000000000000000000000000000000000000000000000000000000000")
             self.transactions = list(filter(bool, infoDict.get("transactions", {})))
@@ -287,6 +297,7 @@ class RaptorChainPuller(object):
             self.refresh()
             
         def refresh(self):
+            print("refreshing swap")
             self.raptorswap.refresh()
             self.price = float(requests.get("https://bsc.api.0x.org/swap/v1/quote?buyToken=BUSD&sellToken=0x44c99ca267c2b2646ceec72e898273085ab87ca5&sellAmount=1000000000000000000").json().get("price"))
             self.tvl = self.raptorswap.tvl
@@ -337,12 +348,14 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
-        self.puller = RaptorChainPuller("http://localhost:4242/")
-#        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+#        self.puller = RaptorChainPuller("http://localhost:4242/")
+        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
         self.port = 7000
+        self.chainNames = {56: "BSC", 137: "Polygon"}
+        self.chainExplorers = {56: "https://bscscan.com/", 137: "https://polygonscan.com/"}
         self.publicNode = "https://rpc.raptorchain.io/"
         self.burnAddress = "0x000000000000000000000000000000000000dead"
 
@@ -502,6 +515,8 @@ class RaptorChainExplorer(object):
 					<div>Hash : {block.proof}</div>
                     <h4>Transactions</h4>
                         {self.txsMapped(list(reversed(block.transactions)))}
+                    <h4>Cross-Chain</h4>
+                        {self.messagesMapped(block.decodedMessages)}
                 </div>
             </div>
         """
@@ -530,7 +545,16 @@ class RaptorChainExplorer(object):
                 {"".join(fmtLines)}
             </tbody>
         </table>"""
+    
+    def formatPayload(self, payload, maxsize=32):
+        _py = payload[0:maxsize].hex()
+        if len(payload) > maxsize:
+            return f"0x{_py}..."
+        return f"0x{_py}"
         
+    def messagesMapped(self, msgs):
+        mappable = [["Destination Chain", "From", "To", "Payload"]] + [[self.chainNames.get(msg.chainid, msg.chainid), (f'<a href="/address/{msg._from}">{msg._from}</a>' if (msg._from != "SYSTEM") else "SYSTEM"), f'<a href="{self.chainExplorers.get(msg.chainid)}/address/{msg.to}">{msg.to}</a>', self.formatPayload(msg.payload, (36 if msg._from == "SYSTEM" else 24))] for msg in msgs]
+        return self.renderTable(lines=mappable)
         
     def txsMapped(self, txids):
         print(txids)
