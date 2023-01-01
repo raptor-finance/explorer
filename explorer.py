@@ -514,10 +514,11 @@ class RaptorChainExplorer(object):
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
-                    <h4>Transactions</h4>
-                        {self.txsMapped(list(reversed(block.transactions)))}
+                    <div>UNIX timestamp : {block.timestamp}</div>
                     <h4>Cross-Chain</h4>
                         {self.messagesMapped(block.decodedMessages)}
+                    <h4>Transactions</h4>
+                        {self.txsMapped(list(reversed(block.transactions)))}
                 </div>
             </div>
         """
