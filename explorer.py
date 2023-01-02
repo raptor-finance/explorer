@@ -649,7 +649,7 @@ class RaptorChainExplorer(object):
                 <div id="txsContainerHomepage">
                     {self.txsMapped(list(reversed([_tx.txid for _tx in self.puller.getLastNTxs(10)])))}
                 </div>
-                <font size=6>Last 10 blocks</font>
+                <font size=6>Last 10 beacon blocks</font>
                 <div id="blocksContainerHomepage">
                     {self.blocksTable(list(reversed([height for height in self.puller.loadStats().blocks])))}
                 </div>
