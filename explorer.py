@@ -342,7 +342,7 @@ class RaptorChainPuller(object):
         return self.Stats(_raw)
         
     def refresh(self):
-        if (time.time() > (self.lastRefresh - 300)): # if last refresh occured less than 5 minutes ago, keep cached value
+        if ((time.time() - self.lastRefresh) < 10): # if last refresh occured less than 5 minutes ago, keep cached value
             return
         self.lastRefresh = time.time()
         self.defi.refresh()
