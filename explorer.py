@@ -349,6 +349,8 @@ class RaptorChainPuller(object):
         
 class RaptorChainExplorer(object):
     def __init__(self):
+        self.timestampFormatScript = """<script>function formatBkTimestamp(tme) { return (new Date(tme * 1000)).toLocaleString(); }</script>"""
+    
 #        self.puller = RaptorChainPuller("http://localhost:4242/")
         self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
@@ -509,18 +511,22 @@ class RaptorChainExplorer(object):
     def BlockCard(self, bkid):
         block = self.puller.loadBlock(bkid)
         return f"""
+            {self.timestampFormatScript}
             <h3 class="cardTitle">{f"Beacon block {block.height}" if block.height else "Genesis Block"}</h3>
             <div class="cardContainer" id="blockCard">
                 <div>
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
-                    <div>UNIX timestamp : {block.timestamp}</div>
+                    <div>Timestamp : <span id="blockTimestamp">{block.timestamp}<span></div>
                     <h4>Cross-Chain</h4>
                         {self.messagesMapped(block.decodedMessages)}
                     <h4>Transactions</h4>
                         {self.txsMapped(list(reversed(block.transactions)))}
                 </div>
             </div>
+            <script>
+                document.getElementById("blockTimestamp").innerHTML = formatBkTimestamp({block.timestamp});
+            </script>
         """
     
     def refactortable(self, columns):
