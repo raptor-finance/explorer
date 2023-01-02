@@ -518,7 +518,7 @@ class RaptorChainExplorer(object):
                     <div>Miner/staker : <a href="/address/{block.miner}">{block.miner}</a></div>
 					<div>Hash : {block.proof}</div>
                     <div>Timestamp : <span id="blockTimestamp">{block.timestamp}<span></div>
-                    <h4>Cross-Chain</h4>
+                    <h4>Cross-Chain Messages</h4>
                         {self.messagesMapped(block.decodedMessages)}
                     <h4>Transactions</h4>
                         {self.txsMapped(list(reversed(block.transactions)))}
@@ -561,7 +561,7 @@ class RaptorChainExplorer(object):
         return f"0x{_py}"
         
     def messagesMapped(self, msgs):
-        mappable = [["Destination Chain", "From", "To", "Payload"]] + [[self.chainNames.get(msg.chainid, msg.chainid), (f'<a href="/address/{msg._from}">{msg._from}</a>' if (msg._from != "SYSTEM") else "SYSTEM"), f'<a href="{self.chainExplorers.get(msg.chainid)}/address/{msg.to}">{msg.to}</a>', self.formatPayload(msg.payload, (36 if msg._from == "SYSTEM" else 24))] for msg in msgs]
+        mappable = [["Source Chain", "Destination Chain", "From", "To", "Payload"]] + [["RaptorChain", f"{self.chainNames.get(msg.chainid, msg.chainid)}", (f'<a href="/address/{msg._from}">{msg._from}</a>' if (msg._from != "SYSTEM") else "SYSTEM"), f'<a href="{self.chainExplorers.get(msg.chainid)}/address/{msg.to}">{msg.to}</a>', self.formatPayload(msg.payload, (34 if msg._from == "SYSTEM" else 18))] for msg in msgs]
         return self.renderTable(lines=mappable)
         
     def txsMapped(self, txids):
