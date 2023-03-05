@@ -357,8 +357,8 @@ class RaptorChainExplorer(object):
         self.testnet = False
         self.decimals = 18
         self.port = 7000
-        self.chainNames = {56: "BSC", 137: "Polygon"}
-        self.chainExplorers = {56: "https://bscscan.com/", 137: "https://polygonscan.com/"}
+        self.chainNames = {56: "BSC", 137: "Polygon", 250: "Fantom"}
+        self.chainExplorers = {56: "https://bscscan.com/", 137: "https://polygonscan.com/", 250: "https://ftmscan.com/"}
         self.publicNode = "https://rpc.raptorchain.io/"
         self.burnAddress = "0x000000000000000000000000000000000000dead"
 
