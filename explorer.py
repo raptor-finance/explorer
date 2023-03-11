@@ -85,12 +85,14 @@ class RaptorChainPuller(object):
             self.affectedAccounts = []
             self.typeName = ""
             self.value = 0
+            self.gasprice = 0
+            self.gasLimit = 0
             if (self.txtype == 0): # legacy transfer
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
                 self.value = max(int(txData.get("tokens")), 0)
                 self.affectedAccounts = [self.sender, self.recipient]
-                self.gasprice = 0
+                self.gasprice = 1000000000000000
                 self.gasLimit = 69000
                 self.fee = self.gasprice*self.gasLimit
                 try:
@@ -326,6 +328,9 @@ class RaptorChainPuller(object):
         _raw = requests.get(f"{self.node}/get/transactions/{txid}").json().get("result")
         return (self.Transaction(_raw[0]) if len(_raw) else None)
         
+    def loadReceipt(self, txid):
+        return self.web3.eth.getTransactionReceipt(txid)
+        
     def loadBatchOfTransactions(self, txids):
         formattedTxids = ",".join(txids)
         _raws = requests.get(f"{self.node}/get/transactions/{formattedTxids}").json().get("result") if len(txids) else []
@@ -489,6 +494,11 @@ class RaptorChainExplorer(object):
                 background-color: #333;
                 color: #fff;
             }
+            
+            .cardContainer h2 {
+                padding-top: 0px;
+                padding-bottom: 0px;
+            }
 			
 			footer {
 				color: #ffffff;
@@ -499,6 +509,8 @@ class RaptorChainExplorer(object):
     
     def TransactionCard(self, txid):
         txObject = self.puller.loadTransaction(txid)
+        txReceipt = self.puller.loadReceipt(txid)
+        gasUsed = txReceipt["gasUsed"]
         return f"""
             <h3 class="cardTitle">Transaction {txid}</h3>
             <div class="cardContainer" id="transactionCard">
@@ -506,7 +518,16 @@ class RaptorChainExplorer(object):
                     <div>Sender : <a href="/address/{txObject.sender}">{txObject.sender}</a></div>
                     <div>Recipient : <a href="/address/{txObject.recipient}">{txObject.recipient}</a></div>
                     <div>Value : {txObject.value / (10**18)} {self.ticker}</div>
+                </div>
+                <h2>Fees</h2>
+                <div>
                     <div>Gas limit : {txObject.gasLimit}</div>
+                    <div>Gas used : {gasUsed} ({((gasUsed * 100)//txObject.gasLimit) if txObject.gasLimit else 0}%)</div>
+                    <div>Gas price : {txObject.gasprice / 10**9} gwei</div>
+                    <div>Fees paid : {(txObject.gasprice * gasUsed)/10**18} RPTR</div>
+                </div>
+                <h2>Advanced data</h2>
+                <div>
                     <div>Calldata : 0x{(txObject.data.hex()) if (len(txObject.data) < 64) else (txObject.data.hex()[:64] + "...")}</div>
                     <div>Epoch : <a href="/block/{txObject.epoch}">{txObject.epoch}</a></div>
                     <div>Type : {txObject.txtype} ({txObject.typeName})</div>
