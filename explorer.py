@@ -106,6 +106,7 @@ class RaptorChainPuller(object):
                 self.value = 0
                 self.affectedAccounts = [self.sender]
                 self.gasprice = 0
+                self.gasLimit = 0
                 self.typeName = "block production"
             elif self.txtype == 2: # metamask transaction
                 decoder = self.ETHTransactionDecoder()
@@ -131,11 +132,13 @@ class RaptorChainPuller(object):
                 self.fee = 0
                 self.l2hash = txData["l2hash"]
                 self.value = 0
+                self.gasLimit = 0
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = "0x0000000000000000000000000000000000000000"
                 self.affectedAccounts = [self.sender]
             elif self.txtype == 4: # MN create
                 self.fee = 0
+                self.gasLimit = 0
                 self.value = 1000000000000000000000000
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
@@ -143,6 +146,7 @@ class RaptorChainPuller(object):
                 self.typeName = "masternode registration"
             elif self.txtype == 5: # MN destroy
                 self.fee = 0
+                self.gasLimit = 0
                 self.value = 0
                 self.sender = w3.toChecksumAddress(txData.get("from"))
                 self.recipient = w3.toChecksumAddress(txData.get("to"))
@@ -150,6 +154,7 @@ class RaptorChainPuller(object):
                 self.typeName = "masternode deletion"
             elif self.txtype == 6:
                 self.fee = 0
+                self.gasLimit = 0
                 self.sender = "0x0000000000000000000000000000000000000000"
                 self.recipient = "0x0000000000000000000000000000000000000000"
                 self.value = 0
@@ -501,6 +506,7 @@ class RaptorChainExplorer(object):
                     <div>Sender : <a href="/address/{txObject.sender}">{txObject.sender}</a></div>
                     <div>Recipient : <a href="/address/{txObject.recipient}">{txObject.recipient}</a></div>
                     <div>Value : {txObject.value / (10**18)} {self.ticker}</div>
+                    <div>Gas limit : {txObject.gasLimit}</div>
                     <div>Calldata : 0x{(txObject.data.hex()) if (len(txObject.data) < 64) else (txObject.data.hex()[:64] + "...")}</div>
                     <div>Epoch : <a href="/block/{txObject.epoch}">{txObject.epoch}</a></div>
                     <div>Type : {txObject.txtype} ({txObject.typeName})</div>
