@@ -361,8 +361,8 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.timestampFormatScript = """<script>function formatBkTimestamp(tme) { return (new Date(tme * 1000)).toLocaleString(); }</script>"""
     
-        self.puller = RaptorChainPuller("http://localhost:4242/")
-#        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+        # self.puller = RaptorChainPuller("http://localhost:4242/")
+        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
@@ -511,6 +511,7 @@ class RaptorChainExplorer(object):
         txObject = self.puller.loadTransaction(txid)
         txReceipt = self.puller.loadReceipt(txid)
         gasUsed = txReceipt["gasUsed"]
+        _feesPaid = txObject.gasprice * gasUsed
         return f"""
             <h3 class="cardTitle">Transaction {txid}</h3>
             <div class="cardContainer" id="transactionCard">
@@ -524,7 +525,8 @@ class RaptorChainExplorer(object):
                     <div>Gas limit : {txObject.gasLimit}</div>
                     <div>Gas used : {gasUsed} ({((gasUsed * 100)//txObject.gasLimit) if txObject.gasLimit else 0}%)</div>
                     <div>Gas price : {txObject.gasprice / 10**9} gwei</div>
-                    <div>Fees paid : {(txObject.gasprice * gasUsed)/10**18} RPTR</div>
+                    <div>Fees paid : {_feesPaid/10**18} RPTR ({round((_feesPaid/10**18) * self.puller.defi.price, 3)}$)</div>
+                    <div>Fees burned &#x1f525; : {(_feesPaid//2)/10**18} RPTR (50%)</div>
                 </div>
                 <h2>Advanced data</h2>
                 <div>
