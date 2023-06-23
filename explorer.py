@@ -307,7 +307,10 @@ class RaptorChainPuller(object):
         def refresh(self):
             print("refreshing swap")
             self.raptorswap.refresh()
-            self.price = float(requests.get("https://bsc.api.0x.org/swap/v1/quote?buyToken=BUSD&sellToken=0x44c99ca267c2b2646ceec72e898273085ab87ca5&sellAmount=1000000000000000000&excludedSources=PancakeSwap").json().get("price"))
+            try:
+                self.price = float(requests.get("https://bsc.api.0x.org/swap/v1/quote?buyToken=BUSD&sellToken=0x44c99ca267c2b2646ceec72e898273085ab87ca5&sellAmount=1000000000000000000&excludedSources=PancakeSwap").json().get("price"))
+            except:
+                pass # keeps former price in case of network error
             self.tvl = self.raptorswap.tvl
             
     
