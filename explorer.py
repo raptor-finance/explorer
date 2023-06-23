@@ -355,10 +355,9 @@ class RaptorChainPuller(object):
         return self.Stats(_raw)
         
     def refresh(self):
-        if ((time.time() - self.lastRefresh) < 300): # if last refresh occured less than 5 minutes ago, keep cached value
-            return
-        self.lastRefresh = time.time()
-        self.defi.refresh()
+        if (((time.time() - self.lastRefresh) >= 300) or (self.defi.price == 0)): # refresh if time elapsed > 5m OR if price is invalid
+            self.lastRefresh = time.time()
+            self.defi.refresh()
         
 class RaptorChainExplorer(object):
     def __init__(self):
