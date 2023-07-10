@@ -16,8 +16,14 @@ CALLROUTERS = ["0x47C0D110eEB1357225B707E0515B17Ab0EB1CaF6", "0xf9bEe606Ae868e05
 # known methods for calldata parsing (needed to compute selector)
 KNOWNMETHODS = [
     "transfer(address,uint256)",
+    "transferFrom(address,address,uint256)",
     "approve(address,uint256)",
-    "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"
+    "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
+    "wrap()",
+    "wrap(address)",
+    "unwrap(bytes32)",
+    "unwrapmultiple(bytes32[])"
+    
 ]
 
 # ABIs to interact with smart contracts
