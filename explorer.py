@@ -23,7 +23,6 @@ KNOWNMETHODS = [
     "wrap(address)",
     "unwrap(bytes32)",
     "unwrapmultiple(bytes32[])"
-    
 ]
 
 # ABIs to interact with smart contracts
