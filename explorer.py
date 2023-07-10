@@ -13,6 +13,7 @@ WRPTRADDRESS = "0xeF7cADE66695f4cD8a535f7916fBF659936818C4" # address of WRPTR
 
 CALLROUTERS = ["0x47C0D110eEB1357225B707E0515B17Ab0EB1CaF6", "0xf9bEe606Ae868e05245cFDEd7AA10598ce682495"] # routing addresses meant to route user-initiated calls (executed in a lower permission context)
 
+# known methods for calldata parsing (needed to compute selector)
 KNOWNMETHODS = [
     "transfer(address,uint256)",
     "approve(address,uint256)",
@@ -51,6 +52,10 @@ class MethodParser(object):
         def decode(self, calldata):
             _usefuldata = calldata[4:]  # get rid of selector
             return eth_abi.decode_abi(self.args, _usefuldata)
+
+        def formatType(self, type, data):
+            n = 0
+            
 
         def prettyPrint(self, calldata):
             decoded = (", ").join(str(d) for d in self.decode(calldata))    # [val1, val2] -> 'val1, val2'
