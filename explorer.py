@@ -412,7 +412,6 @@ class RaptorChainPuller(object):
         self.web3 = Web3(HTTPProvider(f"{node}/web3"))
         self.defi = self.DefiStats(self.web3)
         self.lastRefresh = time.time()
-        self.onlyLastTxs = False
     
     def loadBlock(self, blockid):
         _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
@@ -475,6 +474,7 @@ class RaptorChainExplorer(object):
         self.chainExplorers = {56: "https://bscscan.com/", 137: "https://polygonscan.com/", 250: "https://ftmscan.com/"}
         self.publicNode = "https://rpc.raptorchain.io/"
         self.burnAddress = "0x000000000000000000000000000000000000dead"
+        self.onlyLastTxs = False
 
     def formatAmount(self, rawAmount):
         _withoutDecimals = rawAmount / (10**self.decimals)
