@@ -15,14 +15,21 @@ CALLROUTERS = ["0x47C0D110eEB1357225B707E0515B17Ab0EB1CaF6", "0xf9bEe606Ae868e05
 
 # known methods for calldata parsing (needed to compute selector)
 KNOWNMETHODS = [
-    "transfer(address,uint256)",
-    "transferFrom(address,address,uint256)",
-    "approve(address,uint256)",
-    "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
+    # ERC20 functions
+    "transfer(address to, uint256 tokens)",
+    "transferFrom(address from, address to, uint256 tokens)",
+    "approve(address spender, uint256 tokens)",
+    
+    # swap router functions
+    "swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
+    "swapExactTokensForETH(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
+    "swapExactETHForTokens(uint256 amountOutMin, address[] path, address to, uint256 deadline)",
+    
+    # cross-chain bridge functions
     "wrap()",
-    "wrap(address)",
-    "unwrap(bytes32)",
-    "unwrapmultiple(bytes32[])"
+    "wrap(address to)",
+    "unwrap(bytes32 slot)",
+    "unwrapmultiple(bytes32[] slots)"
 ]
 
 # ABIs to interact with smart contracts
@@ -50,18 +57,25 @@ class MethodParser(object):
             self.fullname = fullname
             self.selector = self.calcFunctionSelector(fullname)
             
-            _splitted = fullname.split("(")                         # name(arg1,arg2) -> ['name', 'args1,arg2)']
+            _splitted = fullname.split("(")                                             # name(arg1,arg2) -> ['name', 'args1,arg2)']
             self.name = _splitted[0]
             self.args = _splitted[1].replace(")", "").split(",")    # 'arg1,arg2)' -> 'arg1,arg2' - ['arg1', 'arg2']
+            self.argtypes = [self.getType(t) for t in self.args]    # type only for ABI decoding purposes
+            self.argnames = [self.getArgName(t) for t in self.args] # name only, for pretty print purposes
 
         def decode(self, calldata):
             _usefuldata = calldata[4:]  # get rid of selector
             return eth_abi.decode_abi(self.args, _usefuldata)
 
-        def formatType(self, type, data):
-            n = 0
+        def getType(self, _argname):
+            _splitted = list(filter(len, _argname.split(" ")))  # "type varName" -> ['type', 'varName'] -> remove whitespaces
+            return _splitted[0]
             
-
+        def getArgName(self, _argname):
+            # "type varName" -> ['type', 'varName'] -> remove whitespaces as well as data location keywords -> trim first keyword (aka arg type)
+            _parsed = list(filter(lambda v: (not ["", "memory", "calldata"].__contains__(v)), _argname.split(" ")))[1:]
+            return _parsed[0] if len(_parsed) else ""
+        
         def prettyPrint(self, calldata):
             decoded = (", ").join(str(d) for d in self.decode(calldata))    # [val1, val2] -> 'val1, val2'
             return f"{self.name}({decoded})"                                # 'val1, val2' -> 'name(val1, val2)'
@@ -77,9 +91,11 @@ class MethodParser(object):
             self.addMethod(f)
         
     def decode(self, calldata):
+        if not calldata:    # empty calldata
+            return ""       # can add a specific message in the future
         foundSelector = calldata[:4]
         if (not self.selectors.get(foundSelector)):
-            raise UnknownMethodError()
+            return "Error: Unknown method"
         return self.selectors.get(foundSelector).prettyPrint(calldata)
 
 methodParser = MethodParser(KNOWNMETHODS)
