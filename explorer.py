@@ -24,7 +24,8 @@ KNOWNMETHODS = [
     "swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
     "swapExactTokensForETH(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
     "swapExactETHForTokens(uint256 amountOutMin, address[] path, address to, uint256 deadline)",
-    "addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)",
+    "addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline)",
+    "addLiquidityETH(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline)",
     
     # cross-chain bridge functions
     "wrap()",
@@ -67,9 +68,9 @@ class MethodParser(object):
 
         def decode(self, calldata):
             if not len(self.args):
-                return ""
+                return []
             _usefuldata = calldata[4:]  # get rid of selector
-            return eth_abi.decode_abi(self.args, _usefuldata)
+            return eth_abi.decode_abi(self.argtypes, _usefuldata)
 
         def getType(self, _argname):
             _splitted = list(filter(len, _argname.split(" ")))  # "type varName" -> ['type', 'varName'] -> remove whitespaces
@@ -83,6 +84,22 @@ class MethodParser(object):
         def prettyPrint(self, calldata):
             decoded = (", ").join(str(d) for d in self.decode(calldata))    # [val1, val2] -> 'val1, val2'
             return f"{self.name}({decoded})"                                # 'val1, val2' -> 'name(val1, val2)'
+
+        def argHighlight(self, arg, _type):
+            if _type == "address":
+                return f"""<a href="/address/{arg}">{arg}</a>"""
+            return arg
+
+        def printParsed(self, calldata):
+            decoded = self.decode(calldata)
+            returnValue = f"""Function name : {self.name}<br/><div class="methodParamsDiv">"""
+            n = 0
+            for _decodedarg in decoded:
+                _type = self.argtypes[n]
+                returnValue = returnValue + f"<div>{self.argnames[n]} ({_type}) : {self.argHighlight(_decodedarg, _type)}</div>"
+                n+=1
+            returnValue = returnValue + "</div>"
+            return returnValue
 
     selectors = {}
     
@@ -100,7 +117,7 @@ class MethodParser(object):
         foundSelector = calldata[:4]
         if (not self.selectors.get(foundSelector)):
             return "Error: Unknown method"
-        return self.selectors.get(foundSelector).prettyPrint(calldata)
+        return self.selectors.get(foundSelector).printParsed(calldata)
 
 methodParser = MethodParser(KNOWNMETHODS)
 
@@ -589,6 +606,20 @@ class RaptorChainExplorer(object):
 			footer {
 				color: #ffffff;
 			}
+            
+            .parsedCalldataDiv {
+                background-color: black;
+                padding: 2mm;
+				border-radius: 5mm;
+            }
+
+			.methodParamsDiv {
+				margin-left: 5mm;
+			}
+
+			.methodParamsDiv div {
+				padding-top: 1mm;
+			}
         """
 
 
@@ -601,6 +632,8 @@ class RaptorChainExplorer(object):
         except Exception as e:
             print(e.__repr__())
             parsed = "Error parsing transaction data"
+            raise
+            
         gasUsed = txReceipt["gasUsed"]
         _feesPaid = txObject.gasprice * gasUsed
         return f"""
@@ -622,7 +655,10 @@ class RaptorChainExplorer(object):
                 <h2>Advanced data</h2>
                 <div>
                     <div>Calldata : 0x{(txObject.data.hex()) if (len(txObject.data) < 64) else (txObject.data.hex()[:64] + "...")}</div>
-                    <div>Parsed calldata : {parsed}</div>
+                    <div>
+                        Parsed calldata :
+                        <div class="parsedCalldataDiv">{parsed}</div>
+                    </div>
                     <div>Epoch : <a href="/block/{txObject.epoch}">{txObject.epoch}</a></div>
                     <div>Type : {txObject.txtype} ({txObject.typeName})</div>
                 </div>
