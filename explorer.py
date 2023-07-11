@@ -412,6 +412,7 @@ class RaptorChainPuller(object):
         self.web3 = Web3(HTTPProvider(f"{node}/web3"))
         self.defi = self.DefiStats(self.web3)
         self.lastRefresh = time.time()
+        self.onlyLastTxs = False
     
     def loadBlock(self, blockid):
         _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
@@ -738,13 +739,16 @@ class RaptorChainExplorer(object):
 
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
+        _txids = list(reversed(acctObject.transactions[1:]))
+        if self.onlyLastTxs:
+            _txids = _txids[:25]
         return f"""
             <h3 class="cardTitle">Account {address}</h3>
 			<div class="cardContainer">
 				<div>Balance : {acctObject.balance / (10**18)} {self.ticker}</div>
 				<div>Nonce : {acctObject.nonce}</div>
 				<h4>Transaction history</h4>
-				{self.txsMapped(list(reversed(acctObject.transactions[1:]))[:25])}
+				{self.txsMapped(_txids)}
 			</div>
         """
         
