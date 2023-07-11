@@ -59,11 +59,13 @@ class MethodParser(object):
             
             _splitted = fullname.split("(")                                             # name(arg1,arg2) -> ['name', 'args1,arg2)']
             self.name = _splitted[0]
-            self.args = _splitted[1].replace(")", "").split(",")    # 'arg1,arg2)' -> 'arg1,arg2' - ['arg1', 'arg2']
+            self.args = list(filter(len, _splitted[1].replace(")", "").split(",")))     # 'arg1,arg2)' -> 'arg1,arg2' - ['arg1', 'arg2']
             self.argtypes = [self.getType(t) for t in self.args]    # type only for ABI decoding purposes
             self.argnames = [self.getArgName(t) for t in self.args] # name only, for pretty print purposes
 
         def decode(self, calldata):
+            if not len(self.args):
+                return ""
             _usefuldata = calldata[4:]  # get rid of selector
             return eth_abi.decode_abi(self.args, _usefuldata)
 
@@ -408,7 +410,15 @@ class RaptorChainPuller(object):
         
     def loadBatchOfTransactions(self, txids):
         formattedTxids = ",".join(txids)
-        _raws = requests.get(f"{self.node}/get/transactions/{formattedTxids}").json().get("result") if len(txids) else []
+        # TODO : split it into chunks (heavy data lmao)
+        # TODO : fetch possible cross-chain deposit hashes
+        _url = f"{self.node}/get/transactions/{formattedTxids}"
+        _raws = requests.get(_url).json().get("result") if len(txids) else []
+        
+        # as `/get/transactions/` only returns actual transactions, cross-chain deposits will need to be fetched separately
+        _receivedHashes = [t["hash"] for t in _raws]
+        _missingHashes = filter((lambda h: not h in _receivedHashes), txids)
+        
         return [self.Transaction(_raw) for _raw in _raws]
     
     def loadAccount(self, address):
@@ -435,8 +445,8 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.timestampFormatScript = """<script>function formatBkTimestamp(tme) { return (new Date(tme * 1000)).toLocaleString(); }</script>"""
     
-        self.puller = RaptorChainPuller("http://localhost:4242/")
-        # self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+        # self.puller = RaptorChainPuller("http://localhost:4242/")
+        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
@@ -696,7 +706,7 @@ class RaptorChainExplorer(object):
 				<div>Balance : {acctObject.balance / (10**18)} {self.ticker}</div>
 				<div>Nonce : {acctObject.nonce}</div>
 				<h4>Transaction history</h4>
-				{self.txsMapped(list(reversed(acctObject.transactions[1:])))}
+				{self.txsMapped(list(reversed(acctObject.transactions[1:][:25])))}
 			</div>
         """
         
