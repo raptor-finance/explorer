@@ -24,6 +24,7 @@ KNOWNMETHODS = [
     "swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
     "swapExactTokensForETH(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
     "swapExactETHForTokens(uint256 amountOutMin, address[] path, address to, uint256 deadline)",
+    "addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline)",
     
     # cross-chain bridge functions
     "wrap()",
@@ -55,13 +56,14 @@ class MethodParser(object):
     
         def __init__(self, fullname):
             self.fullname = fullname
-            self.selector = self.calcFunctionSelector(fullname)
             
             _splitted = fullname.split("(")                                             # name(arg1,arg2) -> ['name', 'args1,arg2)']
             self.name = _splitted[0]
             self.args = list(filter(len, _splitted[1].replace(")", "").split(",")))     # 'arg1,arg2)' -> 'arg1,arg2' - ['arg1', 'arg2']
             self.argtypes = [self.getType(t) for t in self.args]    # type only for ABI decoding purposes
             self.argnames = [self.getArgName(t) for t in self.args] # name only, for pretty print purposes
+
+            self.selector = self.calcFunctionSelector(f"{self.name}({','.join(self.argtypes)})")
 
         def decode(self, calldata):
             if not len(self.args):
@@ -706,7 +708,7 @@ class RaptorChainExplorer(object):
 				<div>Balance : {acctObject.balance / (10**18)} {self.ticker}</div>
 				<div>Nonce : {acctObject.nonce}</div>
 				<h4>Transaction history</h4>
-				{self.txsMapped(list(reversed(acctObject.transactions[1:][:25])))}
+				{self.txsMapped(list(reversed(acctObject.transactions[1:]))[:25])}
 			</div>
         """
         
