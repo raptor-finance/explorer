@@ -647,13 +647,22 @@ class RaptorChainExplorer(object):
 			.methodParamsDiv div {
 				padding-top: 1mm;
 			}
+            
+            .transferDiv {
+                background-color:#00000030;
+                padding: 2mm;
+                margin: 1mm 2mm;
+                border-radius: 5mm;
+            }
         """
 
+    def addressWithLink(self, _addr):
+        return f"""<a href="/address/{_addr}">{_addr}</a>"""
 
     def TransferDiv(self, _t):
         tokenInfo = self.puller.loadToken(_t.token)
         return f"""<div class="transferDiv">
-            {_t.sender} {_t.recipient} {_t.value / (10**tokenInfo.decimals)}
+            {self.addressWithLink(_t.sender)} sent {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}</a> to {self.addressWithLink(_t.recipient)}
         </div>"""
 
     def TransfersCard(self, _events):
