@@ -424,7 +424,7 @@ class RaptorChainPuller(object):
             print("refreshing swap")
             self.raptorswap.refresh()
             try:
-                self.price = float(requests.get("https://bsc.api.0x.org/swap/v1/quote?buyToken=BUSD&sellToken=0x44c99ca267c2b2646ceec72e898273085ab87ca5&sellAmount=1000000000000000000&excludedSources=PancakeSwap").json().get("price"))
+                self.price = float(requests.get("https://api.app-mobula.com/api/1/market/data?asset=raptor%20finance").json().get("data").get("price"))
             except:
                 pass # keeps former price in case of network error
             self.tvl = self.raptorswap.tvl
@@ -898,7 +898,7 @@ class RaptorChainExplorer(object):
 			<div class="networkStats" style="margin-right: 3px">
 				<div>
 					<div><font size=6><a href="/defi">Raptor DeFi</a></font></div>
-					<div>Raptor Price : <a href="https://www.dextools.io/app/bnb/pair-explorer/0x75d2d2abd51b725e3d80238276bd80c65d1674d7">{round(self.puller.defi.price, 7)}$</a></div>
+					<div>Raptor Price : <a href="https://www.dextools.io/app/bnb/pair-explorer/0x75d2d2abd51b725e3d80238276bd80c65d1674d7">{"{price:.7f}".format(price=self.puller.defi.price)}$</a></div>
 					<div>TVL : {int(self.puller.defi.tvl)} RPTR</div>
 				</div>
 			</div>
