@@ -898,7 +898,7 @@ class RaptorChainExplorer(object):
 			<div class="networkStats" style="margin-right: 3px">
 				<div>
 					<div><font size=6><a href="/defi">Raptor DeFi</a></font></div>
-					<div>Raptor Price : <a href="https://www.dextools.io/app/bnb/pair-explorer/0x75d2d2abd51b725e3d80238276bd80c65d1674d7">{"{price:.7f}".format(price=self.puller.defi.price)}$</a></div>
+					<div>Raptor Price : <a href="https://mobula.fi/asset/raptor-finance">{"{price:.7f}".format(price=self.puller.defi.price)}$</a></div>
 					<div>TVL : {int(self.puller.defi.tvl)} RPTR</div>
 				</div>
 			</div>
