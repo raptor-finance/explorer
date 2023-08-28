@@ -119,7 +119,30 @@ class MethodParser(object):
             return "Error: Unknown method"
         return self.selectors.get(foundSelector).printParsed(calldata)
 
+class TransferParser(object):
+    # keccak256("Transfer(address,address,uint256)"), parsed as bytes
+    TOPIC0 = b'\xdd\xf2R\xad\x1b\xe2\xc8\x9bi\xc2\xb0h\xfc7\x8d\xaa\x95+\xa7\xf1c\xc4\xa1\x16(\xf5ZM\xf5#\xb3\xef'
+    
+    class TransferLog(object):
+        def __init__(self, rawLog):
+            # token address is already checksumed/formatted
+            self.token = rawLog.address
+            # decode address AND convert it to checksumed address
+            self.sender = w3.toChecksumAddress(eth_abi.decode_single("address", rawLog.topics[1]))
+            self.recipient = w3.toChecksumAddress(eth_abi.decode_single("address", rawLog.topics[2]))
+            # hex -> int (data is being received as hex)
+            self.value = int(rawLog.data, 16)
+    
+    def parseEventList(self, _events):
+        _ts = []
+        for e in _events:
+            # filters out transfer logs with proper number of arguments
+            if (e.topics[0] == self.TOPIC0) and (len(e["topics"]) == 3):
+                _ts.append(self.TransferLog(e))
+        return _ts
+
 methodParser = MethodParser(KNOWNMETHODS)
+transferParser = TransferParser()
 
 class RaptorChainPuller(object):
     class Transaction(object):
@@ -411,6 +434,7 @@ class RaptorChainPuller(object):
         self.node = node
         self.web3 = Web3(HTTPProvider(f"{node}/web3"))
         self.defi = self.DefiStats(self.web3)
+        self.knownTokens = {}
         self.lastRefresh = time.time()
     
     def loadBlock(self, blockid):
@@ -445,7 +469,10 @@ class RaptorChainPuller(object):
         return self.Account(_raw)
         
     def loadToken(self, tokenAddr):
-        return self.Token(self.web3.eth.contract(address=w3.toChecksumAddress(tokenAddr), abi=ERC20ABI))
+        _parsedAddr = w3.toChecksumAddress(tokenAddr)
+        if not self.knownTokens.get(_parsedAddr):
+            self.knownTokens[_parsedAddr] = self.Token(self.web3.eth.contract(address=_parsedAddr, abi=ERC20ABI))
+        return self.knownTokens.get(_parsedAddr)
         
     def getLastNTxs(self, n):
         _raw = requests.get(f"{self.node}/get/nLastTxs/{n}").json().get("result")
@@ -464,8 +491,8 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.timestampFormatScript = """<script>function formatBkTimestamp(tme) { return (new Date(tme * 1000)).toLocaleString(); }</script>"""
     
-        self.puller = RaptorChainPuller("http://localhost:4242/")
-        # self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+        # self.puller = RaptorChainPuller("http://localhost:4242/")
+        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
@@ -621,9 +648,41 @@ class RaptorChainExplorer(object):
 			.methodParamsDiv div {
 				padding-top: 1mm;
 			}
+            
+            .transferDiv {
+                background-color:#00000030;
+                padding: 3mm;
+                margin: 1mm 2mm;
+                border-radius: 7mm;
+            }
         """
 
+    def addressWithLink(self, _addr):
+        return f"""<a href="/address/{_addr}">{_addr}</a>"""
 
+    def TransferDiv(self, _t):
+        tokenInfo = self.puller.loadToken(_t.token)
+        _icon = " " + self.icon(TOKENICONURLS.get(_t.token), 10) if TOKENICONURLS.get(_t.token) else ""
+        if _t.sender == "0x0000000000000000000000000000000000000000":
+            return f"""<div class="transferDiv">
+                {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}{_icon}</a> minted to {self.addressWithLink(_t.recipient)}
+            </div>"""
+        if _t.recipient == "0x0000000000000000000000000000000000000000":
+            return f"""<div class="transferDiv">
+                {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}{_icon}</a> burned from {self.addressWithLink(_t.sender)}
+            </div>"""
+        return f"""<div class="transferDiv">
+            {self.addressWithLink(_t.sender)} sent {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}{_icon}</a> to {self.addressWithLink(_t.recipient)}
+        </div>"""
+
+    def TransfersCard(self, _events):
+        _transfers = transferParser.parseEventList(_events)
+        _body = ""
+        for _t in _transfers:
+            _body = _body + self.TransferDiv(_t)
+        return f"""<div class="transfersCard">
+            {_body}
+        </div>"""
     
     def TransactionCard(self, txid):
         txObject = self.puller.loadTransaction(txid)
@@ -652,6 +711,10 @@ class RaptorChainExplorer(object):
                     <div>Gas price : {txObject.gasprice / 10**9} gwei</div>
                     <div>Fees paid : {_feesPaid/10**18} RPTR ({round((_feesPaid/10**18) * self.puller.defi.price, 3)}$)</div>
                     <div>Fees burned &#x1f525; : {(_feesPaid//2)/10**18} RPTR (50%)</div>
+                </div>
+                <h2>Token Transfers</h2>
+                <div>
+                {self.TransfersCard(txReceipt["logs"])}
                 </div>
                 <h2>Advanced data</h2>
                 <div>
