@@ -650,9 +650,9 @@ class RaptorChainExplorer(object):
             
             .transferDiv {
                 background-color:#00000030;
-                padding: 2mm;
+                padding: 3mm;
                 margin: 1mm 2mm;
-                border-radius: 5mm;
+                border-radius: 7mm;
             }
         """
 
@@ -661,8 +661,17 @@ class RaptorChainExplorer(object):
 
     def TransferDiv(self, _t):
         tokenInfo = self.puller.loadToken(_t.token)
+        _icon = " " + self.icon(TOKENICONURLS.get(_t.token), 10) if TOKENICONURLS.get(_t.token) else ""
+        if _t.sender == "0x0000000000000000000000000000000000000000":
+            return f"""<div class="transferDiv">
+                {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}{_icon}</a> minted to {self.addressWithLink(_t.recipient)}
+            </div>"""
+        if _t.recipient == "0x0000000000000000000000000000000000000000":
+            return f"""<div class="transferDiv">
+                {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}{_icon}</a> burned from {self.addressWithLink(_t.sender)}
+            </div>"""
         return f"""<div class="transferDiv">
-            {self.addressWithLink(_t.sender)} sent {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}</a> to {self.addressWithLink(_t.recipient)}
+            {self.addressWithLink(_t.sender)} sent {_t.value / (10**tokenInfo.decimals)} <a href="/token/{_t.token}">{tokenInfo.symbol}{_icon}</a> to {self.addressWithLink(_t.recipient)}
         </div>"""
 
     def TransfersCard(self, _events):
