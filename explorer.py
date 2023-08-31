@@ -438,6 +438,8 @@ class RaptorChainPuller(object):
         self.lastRefresh = time.time()
         for _addr, _ in TOKENICONURLS.items():
             self.loadToken(_addr)   # makes sure it's known
+        for p in self.defi.raptorswap.pairs:
+            self.loadToken(p.contract.address)
     
     def loadBlock(self, blockid):
         _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
