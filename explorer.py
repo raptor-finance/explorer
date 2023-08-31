@@ -495,8 +495,8 @@ class RaptorChainPuller(object):
         _holdings = {}
         for addr, tkn in self.knownTokens.items():
             _bal = tkn.contract.functions.balanceOf(holder).call()
-            # if _bal:    # only show nonzero 
-            _holdings[addr] = _bal
+            if _bal:    # only show nonzero
+                _holdings[addr] = _bal
         return _holdings
         
     def getLastNTxs(self, n):
@@ -843,7 +843,7 @@ class RaptorChainExplorer(object):
         for tkn, bal in _tokens.items():
             _tknInfo = self.puller.loadToken(tkn)
             _icon = " " + self.icon(TOKENICONURLS.get(tkn), 10) if TOKENICONURLS.get(tkn) else ""
-            _body = _body + f"""<div class="tokenHoldingsRow">{bal/(10**_tknInfo.decimals)} {_tknInfo.symbol}{_icon}</div>"""
+            _body = _body + f"""<div class="tokenHoldingsRow">{bal/(10**_tknInfo.decimals)} <a href="/token/{tkn}">{_tknInfo.symbol}{_icon}</a></div>"""
         return f"""<div class="tokenHoldings">
             {_body}
         </div>"""
