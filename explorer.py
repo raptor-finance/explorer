@@ -683,6 +683,19 @@ class RaptorChainExplorer(object):
                 margin: 1mm 2mm;
                 border-radius: 7mm;
             }
+            
+			.tokenHoldings {
+				margin: 1mm;
+				padding: 3mm 5mm;
+				padding-right: 10%;
+				border-radius: 7mm;
+				width: fit-content;
+				background-color: #00000030;
+			}
+            
+			.tokenHoldingsRow {
+				margin: 0mm 1mm;
+			}
         """
 
     def addressWithLink(self, _addr):
@@ -834,7 +847,6 @@ class RaptorChainExplorer(object):
             _tknInfo = self.puller.loadToken(tkn)
             _icon = " " + self.icon(TOKENICONURLS.get(tkn), 10) if TOKENICONURLS.get(tkn) else ""
             _body = _body + f"""<div class="tokenHoldingsRow">{bal/(10**_tknInfo.decimals)} {_tknInfo.symbol}{_icon}</div>"""
-        print("Token holdings:", _body)
         return f"""<div class="tokenHoldings">
             {_body}
         </div>"""
