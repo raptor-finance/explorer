@@ -454,16 +454,11 @@ class RaptorChainPuller(object):
         return self.web3.eth.getTransactionReceipt(txid)
         
     def cutIntoChunks(self, _list, _chunkSize):
-        # TODO : make it look simpler
         _chunks = []
-        _currentChunk = []
         while len(_list):
-            if len(_currentChunk) >= _chunkSize:
-                _chunks.append(_currentChunk)
-                _currentChunk = []
-            _currentChunk.append(_list.pop())
-        _chunks.append(_currentChunk)
-        _currentChunk = []
+            # adds chunk to chunks
+            _chunks.append(_list[0:_chunkSize])
+            _list = _list[_chunkSize:]  # removes elements from list (to avoid counting them twice)
         return _chunks
         
     def loadChunkOfTransactions(self, _chunk):
@@ -853,7 +848,7 @@ class RaptorChainExplorer(object):
 
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
-        _txids = acctObject.transactions[1:]
+        _txids = list(reversed(acctObject.transactions[1:]))
         if self.onlyLastTxs:
             _txids = _txids[:25]
         return f"""
