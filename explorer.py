@@ -44,7 +44,6 @@ PAIRABI = """[{"inputs":[],"payable":false,"stateMutability":"nonpayable","type"
 TOKENICONURLS = {
     WRPTRADDRESS: "https://raptorchain.io/images/logo.png",
     "0x9ffE5c6EB6A8BFFF1a9a9DC07406629616c19d32": "https://bsc.duinocoin.com/ducowhite.png"
-    
 }
 
 class MethodParser(object):
@@ -301,13 +300,14 @@ class RaptorChainPuller(object):
                 self.affectedAccounts.append(_addr)
                 
     class Account(object):
-        def __init__(self, infoDict):
+        def __init__(self, infoDict, _tokens={}):
             self.balance = infoDict.get("balance", 0)
             self.storage = infoDict.get("storage", {})
             self.transactions = infoDict.get("transactions", [])
             self.tempStorage = infoDict.get("storage", {})
             self.nonce = infoDict.get("nonce", 0)
             self.code = bytes.fromhex(infoDict.get("code", "").replace("0x", ""))
+            self.tokens = _tokens
     
     class Stats(object):
         def __init__(self, infoDict):
@@ -436,6 +436,8 @@ class RaptorChainPuller(object):
         self.defi = self.DefiStats(self.web3)
         self.knownTokens = {}
         self.lastRefresh = time.time()
+        for _addr, _ in TOKENICONURLS.items():
+            self.loadToken(_addr)   # makes sure it's known
     
     def loadBlock(self, blockid):
         _url = f"{self.node}/chain/block/{blockid}" if ((type(blockid) == int) or (blockid.isnumeric())) else f"{self.node}/chain/blockByHash/{blockid}" # depends if we load it by height or hash
@@ -451,12 +453,29 @@ class RaptorChainPuller(object):
     def loadReceipt(self, txid):
         return self.web3.eth.getTransactionReceipt(txid)
         
-    def loadBatchOfTransactions(self, txids):
-        formattedTxids = ",".join(txids)
-        # TODO : split it into chunks (heavy data lmao)
-        # TODO : fetch possible cross-chain deposit hashes
+    def cutIntoChunks(self, _list, _chunkSize):
+        # TODO : make it look simpler
+        _chunks = []
+        _currentChunk = []
+        while len(_list):
+            if len(_currentChunk) >= _chunkSize:
+                _chunks.append(_currentChunk)
+                _currentChunk = []
+            _currentChunk.append(_list.pop())
+        _chunks.append(_currentChunk)
+        _currentChunk = []
+        return _chunks
+        
+    def loadChunkOfTransactions(self, _chunk):
+        formattedTxids = ",".join(_chunk)
         _url = f"{self.node}/get/transactions/{formattedTxids}"
-        _raws = requests.get(_url).json().get("result") if len(txids) else []
+        return requests.get(_url).json().get("result") if len(_chunk) else []
+        
+    def loadBatchOfTransactions(self, txids):
+        _raws = []
+        _chunks = self.cutIntoChunks(txids, 10)
+        for chk in _chunks:
+            _raws = _raws + self.loadChunkOfTransactions(chk)
         
         # as `/get/transactions/` only returns actual transactions, cross-chain deposits will need to be fetched separately
         _receivedHashes = [t["hash"] for t in _raws]
@@ -466,13 +485,22 @@ class RaptorChainPuller(object):
     
     def loadAccount(self, address):
         _raw = requests.get(f"{self.node}/accounts/accountInfo/{address}").json().get("result")
-        return self.Account(_raw)
+        _tokens = self.tokenHoldings(w3.toChecksumAddress(address))
+        return self.Account(_raw, _tokens)
         
     def loadToken(self, tokenAddr):
         _parsedAddr = w3.toChecksumAddress(tokenAddr)
         if not self.knownTokens.get(_parsedAddr):
             self.knownTokens[_parsedAddr] = self.Token(self.web3.eth.contract(address=_parsedAddr, abi=ERC20ABI))
         return self.knownTokens.get(_parsedAddr)
+        
+    def tokenHoldings(self, holder):
+        _holdings = {}
+        for addr, tkn in self.knownTokens.items():
+            _bal = tkn.contract.functions.balanceOf(holder).call()
+            # if _bal:    # only show nonzero 
+            _holdings[addr] = _bal
+        return _holdings
         
     def getLastNTxs(self, n):
         _raw = requests.get(f"{self.node}/get/nLastTxs/{n}").json().get("result")
@@ -491,8 +519,8 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.timestampFormatScript = """<script>function formatBkTimestamp(tme) { return (new Date(tme * 1000)).toLocaleString(); }</script>"""
     
-        self.puller = RaptorChainPuller("http://127.0.0.1:4242/")
-        # self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+        # self.puller = RaptorChainPuller("http://127.0.0.1:4242/")
+        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
@@ -800,9 +828,20 @@ class RaptorChainExplorer(object):
     def blocksMapped(self, bkids):
         return ("<ul>" + ("".join([f'<li><a href="/block/{bkid}">{bkid}</a></li>' for bkid in bkids])) + "</ul>")
 
+    def tokenHoldingsDiv(self, _tokens):
+        _body = ""
+        for tkn, bal in _tokens.items():
+            _tknInfo = self.puller.loadToken(tkn)
+            _icon = " " + self.icon(TOKENICONURLS.get(tkn), 10) if TOKENICONURLS.get(tkn) else ""
+            _body = _body + f"""<div class="tokenHoldingsRow">{bal/(10**_tknInfo.decimals)} {_tknInfo.symbol}{_icon}</div>"""
+        print("Token holdings:", _body)
+        return f"""<div class="tokenHoldings">
+            {_body}
+        </div>"""
+
     def AccountCard(self, address):
         acctObject = self.puller.loadAccount(address)
-        _txids = list(reversed(acctObject.transactions[1:]))
+        _txids = acctObject.transactions[1:]
         if self.onlyLastTxs:
             _txids = _txids[:25]
         return f"""
@@ -810,6 +849,8 @@ class RaptorChainExplorer(object):
 			<div class="cardContainer">
 				<div>Balance : {acctObject.balance / (10**18)} {self.ticker}</div>
 				<div>Nonce : {acctObject.nonce}</div>
+                <h2>Token Holdings</h2>
+                <div>{self.tokenHoldingsDiv(acctObject.tokens)}</div>
 				<h4>Transaction history</h4>
 				{self.txsMapped(_txids)}
 			</div>
