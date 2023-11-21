@@ -526,8 +526,8 @@ class RaptorChainExplorer(object):
     def __init__(self):
         self.timestampFormatScript = """<script>function formatBkTimestamp(tme) { return (new Date(tme * 1000)).toLocaleString(); }</script>"""
     
-        # self.puller = RaptorChainPuller("http://127.0.0.1:4242/")
-        self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
+        self.puller = RaptorChainPuller("http://127.0.0.1:4242/")
+        # self.puller = RaptorChainPuller("https://rpc.raptorchain.io")
         self.ticker = "RPTR"
         self.testnet = False
         self.decimals = 18
