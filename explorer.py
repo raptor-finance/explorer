@@ -434,7 +434,7 @@ class RaptorChainPuller(object):
             print("refreshing swap")
             self.raptorswap.refresh()
             try:
-                self.price = float(requests.get("https://api.app-mobula.com/api/1/market/data?asset=raptor%20finance").json().get("data").get("price"))
+                self.price = float(requests.get("https://api.app-mobula.com/api/1/market/data?asset=Raptor%20Finance").json().get("data").get("price"))
             except:
                 pass # keeps former price in case of network error
             self.tvl = self.raptorswap.tvl
@@ -1150,6 +1150,11 @@ def getTotalSupply():
         return str(CACHED_SUPPLY)
     CACHED_SUPPLY = RPTR_CONTRACT_BSC.functions.totalSupply().call()/1e18
     return str(CACHED_SUPPLY)
+
+@app.route("/RPTRPrice")
+def getRPTRPrice():
+    explorer.puller.refresh()
+    return str(explorer.puller.defi.price)
 
 @app.route("/pageScripts.js")
 def getPageScripts():
