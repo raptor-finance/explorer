@@ -415,12 +415,12 @@ class RaptorChainPuller(object):
             def fetchPairs(self):
                 _l = self.factory.functions.allPairsLength().call()
                 _pairAddrs = [self.factory.functions.allPairs(n).call() for n in range(_l)]
-                pathfinder.LOAD(self,web3, _pairAddrs)
+                pathfinder.LOAD(self.web3, _pairAddrs)
                 self.pairs = [self.Pair(self.web3, addr) for addr in _pairAddrs] # fetches all pairs as objects
                 self.pairsLenghtLast = _l
     
             def path(self, tokenA, tokenB):
-                return [n.__repr__() for n in graphtest.cheminLeMoinsCher(tokenA, tokenB).noeuds]
+                return [n.__repr__() for n in pathfinder.graph.cheminLeMoinsCher(tokenA, tokenB).noeuds]
     
             def refresh(self):
                 for _pair in self.pairs:
@@ -1204,9 +1204,14 @@ def defi():
 
 @app.route("/swappath/<srctoken>/<desttoken>")
 def swappath(srctoken, desttoken):
+    srctoken = w3.toChecksumAddress(srctoken)
+    desttoken = w3.toChecksumAddress(srctoken)
+    print(pathfinder.graph.graph)
     try:
-        return json.dumps({"success": True, "result": explorer.pageTemplate(explorer.homepageCard())})
-    except:
+        path = explorer.puller.defi.raptorswap.path(srctoken, desttoken)
+        return json.dumps({"success": True, "result": path})
+    except Exception as e:
+        raise
         return json.dumps({"success": False, "message": "Error fetching path"})
 
 
@@ -1216,6 +1221,6 @@ def homepage():
 
 def getApp():
     return app
-
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=explorer.port)
