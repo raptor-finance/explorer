@@ -76,7 +76,6 @@ def LOAD(rpc, pairs):
     TOKENS = []
     ARCS = []
     for addr in PAIRS:
-        print(CHAIN)
         paire = CHAIN.eth.contract(address=addr, abi=PAIR_ABI)
         paireDirecte = ArcPaire(paire, True)
         paireIndirecte = ArcPaire(paire, False)
@@ -92,6 +91,9 @@ def LOAD(rpc, pairs):
         graph.ajouteArc(paireDirecte)
         graph.ajouteArc(paireIndirecte)
 
+def refresh():
+    for arc in ARCS:
+        arc.refresh()
 
 def prettyPrint(chemin, ticker1, ticker2):
     rich.print(f"[yellow]Nouveau chemin trouve:[/yellow] [green]{chemin}[/green] 1 {ticker1} coute {np.exp(chemin.cout)} {ticker2}")

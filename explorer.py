@@ -426,7 +426,7 @@ class RaptorChainPuller(object):
                 for _pair in self.pairs:
                     _pair.refresh()
                 self.tvl = sum([p.RPTRTVL for p in self.pairs])
-                
+                pathfinder.refresh()
     
         def __init__(self, _web3):
             self.web3 = _web3
