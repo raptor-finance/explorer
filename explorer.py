@@ -1,4 +1,4 @@
-import requests, rlp, flask, json, time, eth_abi
+import requests, rlp, flask, json, time, eth_abi, pathfinder
 from rlp.sedes import Binary, big_endian_int, binary
 from flask_cors import CORS
 from dataclasses import asdict, dataclass
@@ -414,8 +414,13 @@ class RaptorChainPuller(object):
                 
             def fetchPairs(self):
                 _l = self.factory.functions.allPairsLength().call()
-                self.pairs = [self.Pair(self.web3, self.factory.functions.allPairs(n).call()) for n in range(_l)] # fetches all pairs as objects
+                _pairAddrs = [self.factory.functions.allPairs(n).call() for n in range(_l)]
+                pathfinder.LOAD(self,web3, _pairAddrs)
+                self.pairs = [self.Pair(self.web3, addr) for addr in _pairAddrs] # fetches all pairs as objects
                 self.pairsLenghtLast = _l
+    
+            def path(self, tokenA, tokenB):
+                return [n.__repr__() for n in graphtest.cheminLeMoinsCher(tokenA, tokenB).noeuds]
     
             def refresh(self):
                 for _pair in self.pairs:
@@ -1196,6 +1201,13 @@ def token(addr):
 @app.route("/defi")
 def defi():
     return explorer.pageTemplate(explorer.DeFiCard())
+
+@app.route("/swappath/<srctoken>/<desttoken>")
+def swappath(srctoken, desttoken):
+    try:
+        return json.dumps({"success": True, "result": explorer.pageTemplate(explorer.homepageCard())})
+    except:
+        return json.dumps({"success": False, "message": "Error fetching path"})
 
 
 @app.route("/")
