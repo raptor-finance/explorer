@@ -513,7 +513,15 @@ class RaptorChainPuller(object):
             if _bal:    # only show nonzero
                 _holdings[addr] = _bal
         return _holdings
-        
+    
+    def hasToken(self, address, tkn):
+        acct = self.loadAccount(address)
+        if tkn == "RPTR":
+            return acct.balance > 0
+        else: # assumes it's a standard ERC20 token
+            tkn = w3.toChecksumAddress(tkn)
+            return acct.tokens[tkn] > 0
+    
     def getLastNTxs(self, n):
         _raw = requests.get(f"{self.node}/get/nLastTxs/{n}").json().get("result")
         return [self.Transaction(_rawtx) for _rawtx in _raw]
@@ -1214,6 +1222,20 @@ def swappath(srctoken, desttoken):
         raise
         return json.dumps({"success": False, "message": "Error fetching path"})
 
+
+@app.route("/zealyapi/hasrptr", methods=["POST"])
+def hasrptr():
+    rdata = json.loads(flask.request.data.decode())
+    wallet = rdata["accounts"].get("wallet")
+    result = explorer.puller.hasToken(wallet, "RPTR")
+    
+    message = "User completed the action" if result else "Sorry, you don't seem to own RPTR on RaptorChain"
+    status_code = 200 if result else 400
+    
+    respdict = {"message": message}
+    
+    return flask.Response(json.dumps(respdict), status=status_code, mimetype="application/json")
+    
 
 @app.route("/")
 def homepage():
