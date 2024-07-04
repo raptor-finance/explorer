@@ -1229,7 +1229,7 @@ def hasrptr():
     wallet = rdata["accounts"].get("wallet")
     result = explorer.puller.hasToken(wallet, "RPTR")
     
-    message = "User completed the action" if result else "Sorry, you don't seem to own RPTR on RaptorChain"
+    message = "User completed the action" if result else "Sorry, you don't seem to have any RPTR on RaptorChain"
     status_code = 200 if result else 400
     
     respdict = {"message": message}
