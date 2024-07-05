@@ -439,7 +439,7 @@ class RaptorChainPuller(object):
             print("refreshing swap")
             self.raptorswap.refresh()
             try:
-                self.price = float(requests.get("https://api.app-mobula.com/api/1/market/data?asset=Raptor%20Finance").json().get("data").get("price"))
+                self.price = float(requests.get("https://api.mobula.io/api/1/market/data?asset=Raptor%20Finance").json().get("data").get("price"))
             except:
                 pass # keeps former price in case of network error
             self.tvl = self.raptorswap.tvl
